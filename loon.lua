@@ -133,14 +133,15 @@ end
 
 local function interpretConfig(config)
     if config == nil then
-        return {}
+        config = {}
     end
 
     if type(config[-1]) == 'string' and config[-1]:find('[Ll]ua') then
         -- TODO: it's a Lua 'arg' table, interpret it.
-        return {}
+        config = {}
     end
 
+    config.uncolored = config.uncolored or os.getenv('NO_COLOR')
     return config
 end
 
