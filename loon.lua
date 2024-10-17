@@ -10,6 +10,15 @@ local export = {
 local serpent = require('serpent')
 
 -----------------------------------------------------------------------------
+-- Cache some globals for speed.
+local fmt = string.format
+local type = type
+local tostring = string
+local insert = table.insert
+local remove = table.remove
+local iowrite = io.write
+
+-----------------------------------------------------------------------------
 local ansi = {}
 
 function ansi.foreground(code)
@@ -52,14 +61,12 @@ for color in pairs(colored) do uncolored[color] = tostring end
 local color = colored
 
 -----------------------------------------------------------------------------
-local fmt = string.format
-
 -- Compose and write a formatted string to the default IO output file.
 local function writef(fstring, ...)
-    io.write(fmt(fstring, ...), '\n')
+    iowrite(fmt(fstring, ...), '\n')
 end
 local function newline()
-    io.write('\n')
+    iowrite('\n')
 end
 
 local function stringify(x)
@@ -77,10 +84,6 @@ end
 
 -----------------------------------------------------------------------------
 -- Internal helper functions.
--- Cache some globals for speed.
-local type = type
-local insert = table.insert
-local remove = table.remove
 
 local function clone(tbl)
     local cloned = {}
