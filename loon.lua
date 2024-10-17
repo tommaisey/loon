@@ -228,6 +228,7 @@ end
 function export.runTerminal(config)
     config = config or {}
     color = config.uncolored and uncolored or colored
+    local terse = config.terse
 
     -- We use this little bit of state to space out failures with newlines.
     -- Successive successes (hehe) are bunched up to save space.
@@ -284,7 +285,7 @@ function export.runTerminal(config)
             end
 
             newlineNext()
-        else
+        elseif not terse then
             newlineAfterFailures()
 
             local summary = asserts.successes > 0

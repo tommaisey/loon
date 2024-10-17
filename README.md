@@ -39,13 +39,13 @@ If you want to control the output more, you can do that one of two ways.
 First, you could pass a config table to the `run()` function:
 
 ``` lua
-test.run({uncolored = true})
+test.run({uncolored = true, terse = true})
 ```
 
 Or, you could pass arguments to the program at the command line.
 To do this, you will have to forward the `arg` global table, which in
 Lua represent the command line arguments. To find out more about the
-config and command line arguments that are accepted, see below.
+config and command line arguments that are accepted, see [below](#config).
 
 ``` lua
 test.run(arg)
@@ -115,4 +115,15 @@ end)
 test.suite.file('first-suite')
 test.suite.file('second-suite')
 test.run()
+```
+
+## config
+
+When you run your tests, you can supply a config table of options, which are all optional.
+
+```lua
+tests.run({
+    uncolored = true, -- don't output color in the terminal
+    terse = true,     -- don't output succesful test titles
+})
 ```
