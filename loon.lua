@@ -131,6 +131,19 @@ local function failMsg(stackLevel, got, expected, text)
     return message .. location .. comparison
 end
 
+local function interpretConfig(config)
+    if config == nil then
+        return {}
+    end
+
+    if type(config[-1]) == 'string' and config[-1]:find('[Ll]ua') then
+        -- TODO: it's a Lua 'arg' table, interpret it.
+        return {}
+    end
+
+    return config
+end
+
 --------------------------------------------------------------------------------------
 -- The stateful part of the library, so be careful!
 -- `tests` is the array of tests registered by user code so far.
@@ -206,7 +219,7 @@ function export.run(config)
         junit = export.runJunit
     }
 
-    config = config or {}
+    config = interpretConfig(config)
     outputs[config.output or 'terminal'](config)
 end
 
