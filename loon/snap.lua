@@ -6,13 +6,15 @@ local color = colored.yes
 -----------------------------------------------------------------------------
 local argspec = {
     dir = 'string',
-    interactive = {true, false},
-    uncolored = {true, false}
+    update = {true, false},
+    uncolored = {true, false},
+    terse = {true, false}
 }
 
 local argdefaults = {
     uncolored = false,
-    interactive = false
+    update = false,
+    terse = false
 }
 
 -----------------------------------------------------------------------------
@@ -50,7 +52,7 @@ end
 -----------------------------------------------------------------------------
 local tests = {}
 local testNames = {}
-local printResults, runInteractive -- filled in later
+local printResults, runUpdate -- filled in later
 
 function export.test(name, actual)
     if testNames[name] then
@@ -96,17 +98,19 @@ function export.run(config, configDefaults)
         end
     end
 
-    if config.interactive then
-        return runInteractive(ordered, pass, fail, new)
+    if config.update then
+        return runUpdate(ordered, pass, fail, new)
     else
-        return printResults(ordered, pass, fail, new)
+        return printResults(ordered, pass, fail, new, config.terse)
     end
 end
 
-function printResults(ordered, pass, fail, new)
+function printResults(ordered, pass, fail, new, terse)
     for _, elem in ipairs(ordered) do
         if elem.result == 'pass' then
-            writef('%s %s', color.pass('+'), elem.name)
+            if not terse then
+                writef('%s %s', color.pass('+'), elem.name)
+            end
         elseif elem.result == 'fail' then
             writef('%s %s', color.fail('x'), elem.name)
             writef('  ' .. indent(diff(elem.actual, elem.path)))
@@ -117,9 +121,8 @@ function printResults(ordered, pass, fail, new)
         end
     end
 
-    writef('\n--------------------------')
-
     if #fail > 0 or #new > 0 then
+        writef('\n--------------------------')
         writef('%s: %s tests', color.pass('pass'), color.pass(#pass))
         writef('%s: %s tests', color.fail('fail'), color.fail(#fail))
 
@@ -127,13 +130,16 @@ function printResults(ordered, pass, fail, new)
             writef('%s: %s tests', color.fail('new'), color.fail(#new))
         end
     else
+        if not terse then
+            writef('\n--------------------------')
+        end
         writef('%s: %s', color.pass('all tests pass'), color.pass(#pass))
     end
 
     return #fail
 end
 
-function runInteractive(_, pass, fail, new)
+function runUpdate(_, pass, fail, new)
     local anyActionRequired = #fail > 0 or #new > 0
     local yes = color.pass('Y')
     local no = color.fail('N')
