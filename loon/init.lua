@@ -210,18 +210,16 @@ function export.runTerminal(config)
     color = config.uncolored and colored.no or colored.yes
     local terse = config.terse
 
-    -- We use this little bit of state to space out failures with newlines.
-    -- Successive successes (hehe) are bunched up to save space.
-    local newlineMarker = false
-    local function newlineNext()
-        newlineMarker = true
-    end
-    local function newlineAfterFailures()
-        newlineMarker = newlineMarker and newline()
+    -- Print newlines after test failure, but not after the last test.
+    local newlineNext = false
+    local function newlineIfNeeded()
+        newlineNext = newlineNext and newline()
     end
 
     -- Write a breadcrumb title showing the suite we're in.
     local function writeSuiteBegin(suitePath)
+        newlineIfNeeded()
+
         if #suitePath == 0 then
             writef('%s', color.suite('default suite'))
         else
@@ -231,14 +229,14 @@ function export.runTerminal(config)
                 insert(title, color.suite(suite))
             end
 
-            newlineAfterFailures()
             writef(table.concat(title, " > "))
         end
     end
 
     local function writeTest(name, numSuccesses, numFails, failures, errorObj)
+        newlineIfNeeded()
+
         if errorObj or numFails > 0 then
-            newline()
             local title = fmt('%s %s', color.fail('x'), name)
 
             if errorObj then
@@ -264,10 +262,8 @@ function export.runTerminal(config)
                 end
             end
 
-            newlineNext()
+            newlineNext = true
         elseif not terse then
-            newlineAfterFailures()
-
             local summary = asserts.successes > 0
                 and color.pass(asserts.successes) .. ' pass'
                 or  color.warn('no assertions')
@@ -276,7 +272,7 @@ function export.runTerminal(config)
     end
 
     local function writeSummary(testPasses, testFails, assertPasses, assertFails)
-        writef('\n--------------------------')
+        writef('--------------------------')
 
         if testFails > 0 then
             writef(
@@ -302,7 +298,7 @@ end
 
 -- Runs the tests, outputting the results in JUNIT's standard XMl format.
 function export.runJunit()
-    color = uncolored
+    color = colored.no
     writef('<?xml version="1.0" encoding="UTF-8"?>\n')
 
     local suite
@@ -406,7 +402,7 @@ end
 -- Runs each test, calling the writeTest() function for each.
 -- Finally calls the writeSummary() function.
 function export.runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
-    local none = function() end
+    local function none() end
     writeSuiteBegin = writeSuiteBegin or none
     writeTest = writeTest or none
     writeSuiteEnd = writeSuiteEnd or none

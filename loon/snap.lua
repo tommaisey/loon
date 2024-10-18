@@ -41,7 +41,7 @@ local function diff(actual, expectedPath)
     file:write(actual)
     file:close()
 
-    local diffHandle = io.popen(fmt('diff --color=always "%s" "%s"', expectedPath, tmpPath))
+    local diffHandle = io.popen(fmt('diff --color=always --context "%s" "%s"', expectedPath, tmpPath))
     local text = assert(diffHandle, 'Could not run diff program'):read('a')
     diffHandle:close()
     os.remove(tmpPath)
