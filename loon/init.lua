@@ -79,7 +79,7 @@ local function deepEquals(a, b)
                 return false
             end
         end
-        for kb, vb in pairs(a) do
+        for kb, vb in pairs(b) do
             if not deepEquals(vb, a[kb]) then
                 return false
             end
