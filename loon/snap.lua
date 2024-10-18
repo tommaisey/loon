@@ -40,7 +40,7 @@ local function diff(actual, expectedPath)
     assert(file:write(actual))
     file:close()
 
-    local diffHandle = io.popen(fmt('diff --color=always --context "%s" "%s"', expectedPath, tmpPath))
+    local diffHandle = io.popen(fmt('diff --color=always "%s" "%s"', expectedPath, tmpPath))
     local text = assert(diffHandle, 'Could not run diff program'):read('a')
     diffHandle:close()
     os.remove(tmpPath)
@@ -50,6 +50,7 @@ end
 -----------------------------------------------------------------------------
 local tests = {}
 local testNames = {}
+local printResults, runInteractive -- filled in later
 
 function export.test(name, actual)
     if testNames[name] then
@@ -62,8 +63,6 @@ function export.test(name, actual)
         testNames[name] = true
     end
 end
-
-local printResults, runInteractive
 
 function export.run(config, configDefaults)
     config = args.verify(config, argspec, argdefaults, configDefaults)
@@ -82,17 +81,17 @@ function export.run(config, configDefaults)
 
         if file == nil then
             insert(new, {name = name, path = path, actual = actual})
-            insert(ordered, {result = 'new', test = elem})
+            insert(ordered, {result = 'new', name = name})
         else
             local saved = file:read('a')
             file:close()
 
             if saved == actual then
-                insert(pass, elem)
-                insert(ordered, {result = 'pass', test = elem})
+                insert(pass, {name = name})
+                insert(ordered, {result = 'pass', name = name})
             else
-                insert(fail, {name = name, path = path, verified = saved, actual = actual})
-                insert(ordered, {result = 'fail', test = elem, path = path, verified = saved, actual = actual})
+                insert(fail, {name = name, path = path, actual = actual})
+                insert(ordered, {result = 'fail', name = name, path = path, actual = actual})
             end
         end
     end
@@ -107,12 +106,12 @@ end
 function printResults(ordered, pass, fail, new)
     for _, elem in ipairs(ordered) do
         if elem.result == 'pass' then
-            writef('%s %s', color.pass('+'), elem.test.name)
+            writef('%s %s', color.pass('+'), elem.name)
         elseif elem.result == 'fail' then
-            writef('%s %s', color.fail('x'), elem.test.name)
-            writef(indent(diff(elem.actual, elem.path)))
+            writef('%s %s', color.fail('x'), elem.name)
+            writef('  ' .. indent(diff(elem.actual, elem.path)))
         elseif elem.result == 'new' then
-            writef('%s %s', color.fail('new!'), elem.test.name)
+            writef('%s %s', color.fail('new!'), elem.name)
         else
             error('logic error')
         end
@@ -120,7 +119,7 @@ function printResults(ordered, pass, fail, new)
 
     writef('\n--------------------------')
 
-    if #fail > 0 then
+    if #fail > 0 or #new > 0 then
         writef('%s: %s tests', color.pass('pass'), color.pass(#pass))
         writef('%s: %s tests', color.fail('fail'), color.fail(#fail))
 
@@ -175,7 +174,7 @@ function runInteractive(_, pass, fail, new)
         end
 
         local file = assert(io.open(path, 'w+'), 'could not open path for writing: ' .. path)
-        file:write(actual)
+        assert(file:write(actual))
         file:close()
         writef('%s: %s', color.pass('accepted'), color.file(path))
         return true
