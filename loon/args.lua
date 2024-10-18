@@ -17,8 +17,14 @@ local function arrayToString(array)
     return table.concat(strs, ', ')
 end
 
-local function allType(array, typeString)
-    for _, val in pairs(array) do
+local function ofType(spec, typeString)
+    if spec == typeString then
+        return true
+    elseif type(spec) == 'string' then
+        return false
+    end
+
+    for _, val in pairs(spec) do
         if type(val) ~= typeString then
             return false
         end
@@ -97,7 +103,7 @@ local function convertIfArgs(config, specs)
         idx = idx + 1
         local value
 
-        if allType(spec, 'boolean') then
+        if ofType(spec, 'boolean') then
             value = true
         elseif valueAfterEquals then
             value = valueAfterEquals:match('["\']?([^"\']+)')
@@ -106,7 +112,7 @@ local function convertIfArgs(config, specs)
             idx = idx + 1
         end
 
-        if allType(spec, 'number') then
+        if ofType(spec, 'number') then
             value = assert(tonumber(value), "couldn't convert argument to a number: " .. value)
         end
 
@@ -121,7 +127,13 @@ local function verifyWithSpec(config, specs)
         local element = config[k]
 
         if element ~= nil then
-            if not contains(spec, element) then
+            if type(spec) == 'string' then
+                local t = type(element)
+                if t ~= spec then
+                    local str = tostring(element)
+                    error(fmt("config element '%s' should have type '%s' but is '%s', %s"), k, spec, t, str)
+                end
+            elseif not contains(spec, element) then
                 local possible = arrayToString(spec)
                 error(fmt("config element '%s' should be one of: %s.\ngot: %q", k, possible, tostring(element)))
             end
@@ -131,9 +143,7 @@ local function verifyWithSpec(config, specs)
     return config
 end
 
-function export.verify(config, spec, defaults)
-    config = convertIfArgs(config, spec)
-
+local function applyDefaults(config, defaults)
     if defaults then
         for k, v in pairs(defaults) do
             if config[k] == nil then
@@ -141,6 +151,13 @@ function export.verify(config, spec, defaults)
             end
         end
     end
+end
+
+function export.verify(config, spec, defaults, userDefaults)
+    config = convertIfArgs(config, spec)
+
+    applyDefaults(config, defaults)
+    applyDefaults(config, userDefaults)
 
     return verifyWithSpec(config, spec)
 end

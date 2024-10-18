@@ -41,7 +41,7 @@ local function execute()
         snap.test(elem.title, run(elem.test))
     end
 
-    os.exit(snap.run({dir = 'tests/snapshots', interactive = true}))
+    os.exit(snap.run(arg, {dir = "tests/snapshots"}))
 end
 
 -----------------------------------------------------------------------------

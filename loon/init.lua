@@ -442,13 +442,13 @@ end
 --------------------------------------------------------------------------------------
 -- Runs the tests, outputting the results in one of several ways,
 -- depending on the configuration table.
-function export.run(config)
+function export.run(config, configDefaults)
     local outputs = {
         terminal = runTerminal,
         junit = runJunit
     }
 
-    config = args.verify(config, argspec, argdefaults)
+    config = args.verify(config, argspec, argdefaults, configDefaults)
     return outputs[config.output](config)
 end
 

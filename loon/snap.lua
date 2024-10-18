@@ -1,11 +1,23 @@
 local export = {}
 
+local args = require('loon.args')
 local colored = require('loon.color')
 local color = colored.yes
 -----------------------------------------------------------------------------
+local argspec = {
+    dir = 'string',
+    interactive = {true, false},
+    uncolored = {true, false}
+}
+
+local argdefaults = {
+    uncolored = false,
+    interactive = false
+}
+
+-----------------------------------------------------------------------------
 -- Cache some globals for speed.
 local fmt = string.format
-local type = type
 local tostring = tostring
 local insert = table.insert
 local iowrite = io.write
@@ -20,19 +32,6 @@ end
 -- Always indent by 2 spaces, don't indent initial line
 local function indent(text)
     return text:gsub('\n', '\n  ')
-end
-
-local function interpretConfig(config)
-    if config == nil then
-        config = {}
-    end
-
-    if type(config[-1]) == 'string' and config[-1]:find('[Ll]ua') then
-        -- TODO: it's a Lua 'arg' table, interpret it.
-        config = {}
-    end
-
-    return config
 end
 
 local function diff(actual, expectedPath)
@@ -66,8 +65,8 @@ end
 
 local printResults, runInteractive
 
-function export.run(config)
-    config = interpretConfig(config)
+function export.run(config, configDefaults)
+    config = args.verify(config, argspec, argdefaults, configDefaults)
     color = config.uncolored and colored.no or colored.yes
     assert(config.dir, 'you failed to configure the output directory. '
         .. 'pass the --dir argument at the terminal, or "dir" element in the config.')
@@ -93,7 +92,7 @@ function export.run(config)
                 insert(ordered, {result = 'pass', test = elem})
             else
                 insert(fail, {name = name, path = path, verified = saved, actual = actual})
-                insert(ordered, {result = 'fail', test = elem, verified = saved})
+                insert(ordered, {result = 'fail', test = elem, path = path, verified = saved, actual = actual})
             end
         end
     end
@@ -111,7 +110,7 @@ function printResults(ordered, pass, fail, new)
             writef('%s %s', color.pass('+'), elem.test.name)
         elseif elem.result == 'fail' then
             writef('%s %s', color.fail('x'), elem.test.name)
-            writef(indent(diff(elem.verified, elem.test.actual)))
+            writef(indent(diff(elem.actual, elem.path)))
         elseif elem.result == 'new' then
             writef('%s %s', color.fail('new!'), elem.test.name)
         else
