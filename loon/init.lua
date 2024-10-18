@@ -7,58 +7,23 @@ local export = {
 
 -----------------------------------------------------------------------------
 -- We use the serpent pretty-printing library for printing tables.
-local serpent = require('serpent')
+local serpent = require('loon.serpent')
+local colored = require('loon.color')
 
 -----------------------------------------------------------------------------
 -- Cache some globals for speed.
 local fmt = string.format
 local type = type
-local tostring = string
+local tostring = tostring
 local insert = table.insert
 local remove = table.remove
 local iowrite = io.write
 
 -----------------------------------------------------------------------------
-local ansi = {}
-
-function ansi.foreground(code)
-    if code <= 47 then
-        return function(text)
-            return "\27[" .. tostring(code) .. "m" .. tostring(text) .. "\27[0m"
-        end
-    else
-        return function(text)
-            return "\27[38;5;" .. tostring(code) .. "m" .. tostring(text) .. "\27[0m"
-        end
-    end
-end
-
-ansi.red = ansi.foreground(31)
-ansi.green = ansi.foreground(32)
-ansi.yellow = ansi.foreground(33)
-ansi.blue = ansi.foreground(34)
-ansi.magenta = ansi.foreground(35)
-ansi.cyan = ansi.foreground(36)
-ansi.orange = ansi.foreground(214)
-
-local colored = {
-    fail = ansi.red,
-    pass = ansi.green,
-    file = ansi.cyan,
-    line = ansi.cyan,
-    suite = ansi.blue,
-    msg = ansi.orange,
-    warn = ansi.yellow,
-    value = ansi.magenta,
-}
-
-local uncolored = {}
-for color in pairs(colored) do uncolored[color] = tostring end
-
 -- This table of functions is used to colorize text.
 -- If it's reassigned to 'uncolored', output will be uncolored.
 -- This is done by individual 'run' functions as needed below.
-local color = colored
+local color = colored.yes
 
 -----------------------------------------------------------------------------
 -- Compose and write a formatted string to the default IO output file.
@@ -203,6 +168,18 @@ function export.suite.file(requirePath)
     export.suite.stop()
 end
 
+-- Since this module is stateful, you may occasionally need to
+-- reset it, if you want to do multiple independent test runs.
+-- This deletes all the tests that have been added up to this
+-- point, and clears the current suite scope.
+function export.clear()
+    tests = {}
+    asserts = {successes = 0, failed = {}}
+    suiteNow = suiteDefault
+    suitePathStack = {}
+    suiteStack = {suiteNow}
+end
+
 --------------------------------------------------------------------------------------
 function export.assert.equals(got, expected, text)
     if deepEquals(got, expected) then
@@ -224,13 +201,13 @@ function export.run(config)
     }
 
     config = interpretConfig(config)
-    outputs[config.output or 'terminal'](config)
+    return outputs[config.output or 'terminal'](config)
 end
 
 -- Runs the tests, outputting the results in a friendly terminal format.
 function export.runTerminal(config)
     config = config or {}
-    color = config.uncolored and uncolored or colored
+    color = config.uncolored and colored.no or colored.yes
     local terse = config.terse
 
     -- We use this little bit of state to space out failures with newlines.
@@ -320,7 +297,7 @@ function export.runTerminal(config)
         end
     end
 
-    export.runWith(writeSuiteBegin, writeTest, nil, writeSummary)
+    return export.runWith(writeSuiteBegin, writeTest, nil, writeSummary)
 end
 
 -- Runs the tests, outputting the results in JUNIT's standard XMl format.
@@ -423,7 +400,7 @@ function export.runJunit()
         writef('</testsuites>')
     end
 
-    export.runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
+    return export.runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
 end
 
 -- Runs each test, calling the writeTest() function for each.
@@ -474,6 +451,7 @@ function export.runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
     end
 
     writeSummary(testPasses, testFails, assertPasses, assertFails)
+    return testFails
 end
 
 return export

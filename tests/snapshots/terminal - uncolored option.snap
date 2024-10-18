@@ -1,0 +1,11 @@
+default suite
++ jabberwock [1 pass]
+
+x slithy [1 fail, 0 pass]
+  (1) tests/tests.lua:137: expected: 5, got: 3
+
++ mimsy [1 pass]
+
+--------------------------
+pass: 2 tests, 2 assertions
+fail: 1 tests, 1 assertions

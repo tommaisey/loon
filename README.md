@@ -2,10 +2,11 @@
 
 `loon` is a test library for the Lua programming language, with the following goals:
 
-- Small: only two files (one of them is the `serpent` pretty-printing library), ~600 loc
+- Small, with no external dependencies (embeds the `serpent` library for pretty-printing)
 - Simple and attractive API, with no globals
 - Beautiful output
 - Assertion failures don't halt tests
+- Snapshot testing facility
 
 There are of course several other Lua test libraries, I simply wanted one with this
 set of goals and trade-offs, and couldn't find exactly what I was looking for.
