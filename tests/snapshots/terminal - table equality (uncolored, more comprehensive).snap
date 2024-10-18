@@ -1,6 +1,6 @@
 default suite
 x flat [3 fail, 0 pass]
-  (1) tests/tests.lua:244: 
+  (1) tests/tests.lua:267: 
   expected: {
     a = 1,
     b = 3
@@ -8,7 +8,7 @@ x flat [3 fail, 0 pass]
     a = 1,
     b = 2
   }
-  (2) tests/tests.lua:245: 
+  (2) tests/tests.lua:268: 
   expected: {
     a = 1,
     c = 2
@@ -16,7 +16,7 @@ x flat [3 fail, 0 pass]
     a = 1,
     b = 2
   }
-  (3) tests/tests.lua:246: 
+  (3) tests/tests.lua:269: 
   expected: {
     1,
     2,
@@ -30,7 +30,7 @@ x flat [3 fail, 0 pass]
   }
 
 x string [1 fail, 0 pass]
-  (1) tests/tests.lua:249: 
+  (1) tests/tests.lua:272: 
   expected: {
     a = 1,
     b = "byes"
@@ -40,7 +40,7 @@ x string [1 fail, 0 pass]
   }
 
 x nested [1 fail, 0 pass]
-  (1) tests/tests.lua:252: 
+  (1) tests/tests.lua:275: 
   expected: {
     a = 1,
     b = {
