@@ -9,6 +9,20 @@ local export = {
 -- We use the serpent pretty-printing library for printing tables.
 local serpent = require('loon.serpent')
 local colored = require('loon.color')
+local args = require('loon.args')
+
+-----------------------------------------------------------------------------
+local argspec = {
+    output = {'terminal', 'junit'},
+    uncolored = {true, false},
+    terse = {true, false}
+}
+
+local argdefaults = {
+    output = 'terminal',
+    uncolored = os.getenv('NO_COLOR'),
+    terse = false
+}
 
 -----------------------------------------------------------------------------
 -- Cache some globals for speed.
@@ -99,20 +113,6 @@ local function failMsg(stackLevel, got, expected, text)
     return message .. location .. comparison
 end
 
-local function interpretConfig(config)
-    if config == nil then
-        config = {}
-    end
-
-    if type(config[-1]) == 'string' and config[-1]:find('[Ll]ua') then
-        -- TODO: it's a Lua 'arg' table, interpret it.
-        config = {}
-    end
-
-    config.uncolored = config.uncolored or os.getenv('NO_COLOR')
-    return config
-end
-
 --------------------------------------------------------------------------------------
 -- The stateful part of the library, so be careful!
 -- `tests` is the array of tests registered by user code so far.
@@ -192,21 +192,10 @@ end
 export.assert.eq = export.assert.equals -- alias
 
 --------------------------------------------------------------------------------------
--- Runs the tests, outputting the results in one of several ways,
--- depending on the configuration table.
-function export.run(config)
-    local outputs = {
-        terminal = export.runTerminal,
-        junit = export.runJunit
-    }
-
-    config = interpretConfig(config)
-    return outputs[config.output or 'terminal'](config)
-end
+local runWith -- filled in later
 
 -- Runs the tests, outputting the results in a friendly terminal format.
-function export.runTerminal(config)
-    config = config or {}
+local function runTerminal(config)
     color = config.uncolored and colored.no or colored.yes
     local terse = config.terse
 
@@ -293,11 +282,11 @@ function export.runTerminal(config)
         end
     end
 
-    return export.runWith(writeSuiteBegin, writeTest, nil, writeSummary)
+    return runWith(writeSuiteBegin, writeTest, nil, writeSummary)
 end
 
 -- Runs the tests, outputting the results in JUNIT's standard XMl format.
-function export.runJunit()
+local function runJunit()
     color = colored.no
     writef('<?xml version="1.0" encoding="UTF-8"?>\n')
 
@@ -396,12 +385,12 @@ function export.runJunit()
         writef('</testsuites>')
     end
 
-    return export.runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
+    return runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
 end
 
 -- Runs each test, calling the writeTest() function for each.
 -- Finally calls the writeSummary() function.
-function export.runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
+function runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
     local function none() end
     writeSuiteBegin = writeSuiteBegin or none
     writeTest = writeTest or none
@@ -448,6 +437,19 @@ function export.runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
 
     writeSummary(testPasses, testFails, assertPasses, assertFails)
     return testFails
+end
+
+--------------------------------------------------------------------------------------
+-- Runs the tests, outputting the results in one of several ways,
+-- depending on the configuration table.
+function export.run(config)
+    local outputs = {
+        terminal = runTerminal,
+        junit = runJunit
+    }
+
+    config = args.verify(config, argspec, argdefaults)
+    return outputs[config.output](config)
 end
 
 return export

@@ -2,7 +2,7 @@
 [32m+[0m jabberwock [[32m1[0m pass]
 [32m+[0m brillig [[32m2[0m pass]
 [31mx[0m slithy [[31m1[0m fail, [32m0[0m pass]
-  ([31m1[0m) [36mtests/tests.lua[0m:[36m100[0m: expected: [35m5[0m, got: [31m3[0m
+  ([31m1[0m) [36mtests/terminal-output.lua[0m:[36m100[0m: expected: [35m5[0m, got: [31m3[0m
 
 [32m+[0m mimsy [[32m1[0m pass]
 --------------------------
