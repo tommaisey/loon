@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites tests="1" failures="0" errors="0" assertions="1" skipped="0">
+  <testsuite name="default">
+    <properties><property name="Lua Version" value="Lua 5.4" /></properties>
+    <testcase name="jabberwock" classname="default" assertions="1" />
+  </testsuite>
+</testsuites>

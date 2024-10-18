@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites tests="1" failures="1" errors="0" assertions="5" skipped="0">
+  <testsuite name="default">
+    <properties><property name="Lua Version" value="Lua 5.4" /></properties>
+    <testcase name="jabberwock" classname="default" assertions="5">
+      <failure message="here is the message&#10;tests/junit-output.lua:76: expected: 99, got: 42"></failure>
+    </testcase>
+  </testsuite>
+</testsuites>

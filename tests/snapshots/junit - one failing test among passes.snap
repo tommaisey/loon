@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites tests="4" failures="1" errors="0" assertions="5" skipped="0">
+  <testsuite name="default">
+    <properties><property name="Lua Version" value="Lua 5.4" /></properties>
+    <testcase name="jabberwock" classname="default" assertions="1" />
+    <testcase name="brillig" classname="default" assertions="2" />
+    <testcase name="slithy" classname="default" assertions="1">
+      <failure message="tests/junit-output.lua:100: expected: 5, got: 3"></failure>
+    </testcase>
+    <testcase name="mimsy" classname="default" assertions="1" />
+  </testsuite>
+</testsuites>

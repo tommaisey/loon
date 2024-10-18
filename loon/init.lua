@@ -15,13 +15,14 @@ local args = require('loon.args')
 local argspec = {
     output = {'terminal', 'junit'},
     uncolored = {true, false},
-    terse = {true, false}
+    terse = {true, false},
+    times = {true, false}
 }
 
 local argdefaults = {
-    output = 'terminal',
     uncolored = os.getenv('NO_COLOR'),
-    terse = false
+    times = true,
+    output = 'terminal'
 }
 
 -----------------------------------------------------------------------------
@@ -286,8 +287,9 @@ local function runTerminal(config)
 end
 
 -- Runs the tests, outputting the results in JUNIT's standard XMl format.
-local function runJunit()
+local function runJunit(config)
     color = colored.no
+    local times = config.times
     writef('<?xml version="1.0" encoding="UTF-8"?>\n')
 
     local suite
@@ -335,12 +337,12 @@ local function runJunit()
         local endTime = os.clock()
 
         writef(
-            '<testsuites tests="%d" failures="%d" errors="%d" assertions="%d" skipped="0" time="%g">',
+            '<testsuites tests="%d" failures="%d" errors="%d" assertions="%d" skipped="0"%s>',
             testPasses + testFails,
             testFails,
             numErrorTests,
             assertPasses + assertFails,
-            endTime - startTime
+            times and fmt(' time="%g"', endTime - startTime) or ""
         )
 
         -- Remove empty test suites from the results
@@ -370,7 +372,7 @@ local function runJunit()
                     writef('    <testcase name="%s" classname="%s" assertions="%d">', name, suiteName, num)
 
                     for _, failure in ipairs(result.failures) do
-                        writef('      <failure message="%s"></failure>', failure)
+                        writef('      <failure message="%s"></failure>', failure:gsub('\n', '&#10;'))
                     end
 
                     writef('    </testcase>')

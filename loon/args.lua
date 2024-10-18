@@ -156,8 +156,9 @@ end
 function export.verify(config, spec, defaults, userDefaults)
     config = convertIfArgs(config, spec)
 
-    applyDefaults(config, defaults)
+    -- Apply user defaults first, to override system defaults
     applyDefaults(config, userDefaults)
+    applyDefaults(config, defaults)
 
     return verifyWithSpec(config, spec)
 end

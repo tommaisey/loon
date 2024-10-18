@@ -11,6 +11,7 @@ end
 -----------------------------------------------------------------
 test.suite.start('arg interpretation and validation')
 
+test.suite.start('parsing')
 test.add('two booleans', function()
     local spec = {
         one = {true, false},
@@ -71,7 +72,9 @@ test.add('values supplied as number', function()
     eq(verify({'--one', '--three=\'4\'', '--two'}, spec), ex4)
     eq(verify({'--one', '--three=\'5\'', '--two'}, spec), ex5)
 end)
+test.suite.stop('parsing')
 
+test.suite.start('defaults')
 test.add('system defaults', function()
     local spec = {
         one = {true, false},
@@ -92,7 +95,7 @@ test.add('system defaults', function()
     eq(verify({'--three=4'}, spec, defaults), ex4, 'overridden')
 end)
 
-test.add('system defaults', function()
+test.add('user defaults', function()
     local spec = {
         one = {true, false},
         two = {true, false},
@@ -112,6 +115,7 @@ test.add('system defaults', function()
     eq(verify({}, spec, defaults, {}), ex, 'with empty user defaults')
     eq(verify({}, spec, defaults, userDefaults), exuser, 'with user defaults')
 end)
+test.suite.stop('defaults')
 
 test.suite.stop('arg interpretation and validation')
 test.run(arg)
