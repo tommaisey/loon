@@ -154,8 +154,8 @@ end
 -- `asserts` is the tally of assertions that have run in a currently running test.
 local tests = {}
 local asserts = {successes = 0, failed = {}}
-local rootSuite = {}
-local suiteNow = rootSuite
+local suiteDefault = {}
+local suiteNow = suiteDefault
 local suitePathStack = {}
 local suiteStack = {suiteNow}
 
@@ -168,8 +168,8 @@ function export.add(testName, testFunction)
 end
 
 -- Begin a suite of tests. After this you should add some tests,
--- and then call `suite.pop()` to return to the parent/outer suite (if any)
-function export.suite.push(name)
+-- and then call `suite.stop()` to return to the parent/outer suite (if any)
+function export.suite.start(name)
     insert(suitePathStack, name)
     suiteNow = clone(suitePathStack)
     insert(suiteStack, suiteNow)
@@ -177,30 +177,30 @@ end
 
 -- End a suite of tests. You will now be in the parent/outer suite (if any).
 -- Although this need not take any arguments, you can supply the same name
--- you used for the corresponding call to `suite.push()` for readability
+-- you used for the corresponding call to `suite.start()` for readability
 -- reasons if you like.
-function export.suite.pop(_name)
-    assert(#suitePathStack > 0 and #suiteStack > 0, "Your suite.push/pop calls are unmatched!")
+function export.suite.stop(_name)
+    assert(#suitePathStack > 0 and #suiteStack > 0, "Your suite.start/stop calls are unmatched!")
     remove(suitePathStack)
     remove(suiteStack)
     suiteNow = suiteStack[#suiteStack]
 end
 
--- If you prefer not to call `suite.push()` & `suite.pop()` manually,
+-- If you prefer not to call `suite.start()` & `suite.stop()` manually,
 -- you can use this to run a series of tests inside a named suite.
 function export.suite.with(name, functionContainingTests)
-    export.suite.push(name)
+    export.suite.start(name)
     functionContainingTests()
-    export.suite.pop()
+    export.suite.stop()
 end
 
 -- Run a file of tests as a suite.
 -- This allows you to run a collection of files,
 -- each in their own suite.
 function export.suite.file(requirePath)
-    export.suite.push(requirePath)
+    export.suite.start(requirePath)
     require(requirePath)
-    export.suite.pop()
+    export.suite.stop()
 end
 
 --------------------------------------------------------------------------------------
@@ -449,7 +449,7 @@ function export.runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
         end)
 
         if suite ~= currentSuite then
-            if #suite <= #currentSuite and suite ~= rootSuite then
+            if #suite <= #currentSuite and suite ~= suiteDefault then
                 writeSuiteEnd(currentSuite)
             end
 

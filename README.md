@@ -58,22 +58,26 @@ test.run(arg)
 ```lua
 local test = require('loon')
 
-test.suite.push('first suite')
+test.suite.start('first suite')
+
 test.add('test one', function()
     test.assert.eq(1 + 1, 2, 'must be in a euclidean universe')
 end)
-test.suite.pop('first suite')
 
-test.suite.push('second suite')
+test.suite.stop('first suite')
+
+test.suite.start('second suite')
+
 test.add('test two', function()
     test.assert.eq(2 + 2, 4, '2 + 2 must equal 4')
 end)
-test.suite.pop('second suite')
+
+test.suite.stop('second suite')
 
 test.run()
 ```
 
-If you prefer, you can push and pop the suite in a single statement, like so.
+If you prefer, you can push and stop the suite in a single statement, like so.
 This results in exactly the same output as the first example.
 
 ```lua
