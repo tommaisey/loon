@@ -37,7 +37,7 @@ end
 local function diff(actual, expectedPath)
     local tmpPath = os.tmpname()
     local file = assert(io.open(tmpPath, 'w+'), "test runner couldn't open temporary file")
-    file:write(actual)
+    assert(file:write(actual))
     file:close()
 
     local diffHandle = io.popen(fmt('diff --color=always --context "%s" "%s"', expectedPath, tmpPath))
