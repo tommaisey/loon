@@ -232,4 +232,30 @@ test('terminal - mixed default and suites (2)', function()
     end)
 end)
 
+-----------------------------------------------------------------------------
+test('terminal - table equality (colored)', function()
+    loon.add('flat', function()
+        eq({a = 1, b = 2}, {a = 1, b = 3})
+    end)
+end)
+
+test('terminal - table equality (uncolored, more comprehensive)', function()
+    loon.add('flat', function()
+        eq({a = 1, b = 2}, {a = 1, b = 3})
+        eq({a = 1, b = 2}, {a = 1, c = 2})
+        eq({1, 2, 3, 4}, {1, 2, 4, 5})
+    end)
+    loon.add('string', function()
+        eq({a = 1, b = 'hi'}, {a = 1, b = 'byes'})
+    end)
+    loon.add('nested', function()
+        eq(
+            {a = 1, b = {c = 2, d = {e = 3}, f = 'hi'}},
+            {a = 1, b = {c = 2, d = {e = 7}, f = 'hi'}}
+        )
+    end)
+
+    return {uncolored = true}
+end)
+
 execute()
