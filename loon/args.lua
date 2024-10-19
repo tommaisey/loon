@@ -18,10 +18,8 @@ local function arrayToString(array)
 end
 
 local function ofType(spec, typeString)
-    if spec == typeString then
-        return true
-    elseif type(spec) == 'string' then
-        return false
+    if type(spec) == 'string' then
+        return spec == typeString
     end
 
     for _, val in pairs(spec) do
@@ -51,9 +49,7 @@ local function isArgsList(config)
 
         if element == nil then
             return false
-        end
-
-        if type(element) == 'string' and element:find('[Llua]') then
+        elseif type(element) == 'string' and element:find('[Llua]') then
             return true
         end
 
@@ -64,9 +60,7 @@ end
 local function convertIfArgs(config, specs)
     if config == nil then
         return {}
-    end
-
-    if not isArgsList(config) then
+    elseif not isArgsList(config) then
         return config
     end
 
@@ -77,12 +71,9 @@ local function convertIfArgs(config, specs)
         local item = config[idx]
         if item == nil then break end
 
-        local name = item:match('^%-*(.+)$')
         local valueAfterEquals
-
-        if name == nil then
-            error("malformed argument: " .. name)
-        end
+        local name = item:match('^%-*(.+)$')
+        assert(name, "malformed argument: " .. name)
 
         if name:find('=') then
             local name2, value2 = name:match('([^=]+)=([^=]+)')
@@ -153,7 +144,9 @@ local function applyDefaults(config, defaults)
     end
 end
 
+---------------------------------------------------------------------------
 function export.verify(config, spec, defaults, userDefaults)
+    assert(spec, 'args spec is required')
     config = convertIfArgs(config, spec)
 
     -- Apply user defaults first, to override system defaults
