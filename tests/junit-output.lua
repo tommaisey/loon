@@ -69,6 +69,12 @@ test('junit - one failing test with a message', function()
     end)
 end)
 
+test('junit - one errored test', function()
+    loon.add('jabberwock', function()
+        error('I did a boo-boo')
+    end)
+end)
+
 test('junit - one failing test with one assertion failing among passes', function()
     loon.add('jabberwock', function()
         eq(1, 1)

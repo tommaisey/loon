@@ -4,7 +4,7 @@
   <testsuite name="default">
     <properties><property name="Lua Version" value="Lua 5.4" /></properties>
     <testcase name="flat" classname="default" assertions="1">
-      <failure message="tests/junit-output.lua:222: &#10;expected: {&#10;  a = 1,&#10;  b = 3&#10;}, got: {&#10;  a = 1,&#10;  b = 2&#10;}"></failure>
+      <failure message="tests/junit-output.lua:228: &#10;expected: {&#10;  a = 1,&#10;  b = 3&#10;}, got: {&#10;  a = 1,&#10;  b = 2&#10;}"></failure>
     </testcase>
   </testsuite>
 </testsuites>

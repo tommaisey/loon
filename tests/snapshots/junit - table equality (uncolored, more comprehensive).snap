@@ -4,15 +4,15 @@
   <testsuite name="default">
     <properties><property name="Lua Version" value="Lua 5.4" /></properties>
     <testcase name="flat" classname="default" assertions="3">
-      <failure message="tests/junit-output.lua:228: &#10;expected: {&#10;  a = 1,&#10;  b = 3&#10;}, got: {&#10;  a = 1,&#10;  b = 2&#10;}"></failure>
-      <failure message="tests/junit-output.lua:229: &#10;expected: {&#10;  a = 1,&#10;  c = 2&#10;}, got: {&#10;  a = 1,&#10;  b = 2&#10;}"></failure>
-      <failure message="tests/junit-output.lua:230: &#10;expected: {&#10;  1,&#10;  2,&#10;  4,&#10;  5&#10;}, got: {&#10;  1,&#10;  2,&#10;  3,&#10;  4&#10;}"></failure>
+      <failure message="tests/junit-output.lua:234: &#10;expected: {&#10;  a = 1,&#10;  b = 3&#10;}, got: {&#10;  a = 1,&#10;  b = 2&#10;}"></failure>
+      <failure message="tests/junit-output.lua:235: &#10;expected: {&#10;  a = 1,&#10;  c = 2&#10;}, got: {&#10;  a = 1,&#10;  b = 2&#10;}"></failure>
+      <failure message="tests/junit-output.lua:236: &#10;expected: {&#10;  1,&#10;  2,&#10;  4,&#10;  5&#10;}, got: {&#10;  1,&#10;  2,&#10;  3,&#10;  4&#10;}"></failure>
     </testcase>
     <testcase name="string" classname="default" assertions="1">
-      <failure message="tests/junit-output.lua:233: &#10;expected: {&#10;  a = 1,&#10;  b = "byes"&#10;}, got: {&#10;  a = 1,&#10;  b = "hi"&#10;}"></failure>
+      <failure message="tests/junit-output.lua:239: &#10;expected: {&#10;  a = 1,&#10;  b = "byes"&#10;}, got: {&#10;  a = 1,&#10;  b = "hi"&#10;}"></failure>
     </testcase>
     <testcase name="nested" classname="default" assertions="1">
-      <failure message="tests/junit-output.lua:236: &#10;expected: {&#10;  a = 1,&#10;  b = {&#10;    c = 2,&#10;    d = {&#10;      e = 7&#10;    },&#10;    f = "hi"&#10;  }&#10;}, got: {&#10;  a = 1,&#10;  b = {&#10;    c = 2,&#10;    d = {&#10;      e = 3&#10;    },&#10;    f = "hi"&#10;  }&#10;}"></failure>
+      <failure message="tests/junit-output.lua:242: &#10;expected: {&#10;  a = 1,&#10;  b = {&#10;    c = 2,&#10;    d = {&#10;      e = 7&#10;    },&#10;    f = "hi"&#10;  }&#10;}, got: {&#10;  a = 1,&#10;  b = {&#10;    c = 2,&#10;    d = {&#10;      e = 3&#10;    },&#10;    f = "hi"&#10;  }&#10;}"></failure>
     </testcase>
   </testsuite>
 </testsuites>
