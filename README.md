@@ -11,6 +11,8 @@
 There are of course several other Lua test libraries, I simply wanted one with this
 set of goals and trade-offs, and couldn't find exactly what I was looking for.
 
+This library is current a work in progress.
+
 # examples
 
 ## basics
@@ -54,7 +56,7 @@ test.run(arg)
 
 ## suites
 
-`loon` allows you to group your tests into suites, which can be nested.
+You can group your tests into suites, which can be nested.
 
 ```lua
 local test = require('loon')
@@ -78,7 +80,7 @@ test.suite.stop('second suite')
 test.run()
 ```
 
-If you prefer, you can push and stop the suite in a single statement, like so.
+If you prefer, you can start and stop the suite in a single statement, using `with`.
 This results in exactly the same output as the first example.
 
 ```lua
