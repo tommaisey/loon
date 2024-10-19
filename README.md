@@ -4,6 +4,7 @@
 
 - Small, with no external dependencies (embeds the `serpent` library for pretty-printing)
 - Simple and attractive API, with no globals
+- Equally easy to run from the terminal or programatically
 - Beautiful output
 - Assertion failures don't halt tests
 - Snapshot testing facility
