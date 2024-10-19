@@ -4,13 +4,16 @@
   <testsuite name="suite 1">
     <properties><property name="Lua Version" value="Lua 5.4" /></properties>
     <testcase name="jabberwock" classname="suite 1" assertions="1" />
-    <testcase name="brillig" classname="suite 1" assertions="2" />
+  </testsuite>
+  <testsuite name="default">
+    <properties><property name="Lua Version" value="Lua 5.4" /></properties>
+    <testcase name="brillig" classname="default" assertions="2" />
+    <testcase name="mimsy" classname="default" assertions="1" />
   </testsuite>
   <testsuite name="suite 2">
     <properties><property name="Lua Version" value="Lua 5.4" /></properties>
     <testcase name="slithy" classname="suite 2" assertions="1">
-      <failure message="tests/junit-output.lua:127: expected: 5, got: 3"></failure>
+      <failure message="tests/junit-output.lua:192: expected: 5, got: 3"></failure>
     </testcase>
-    <testcase name="mimsy" classname="suite 2" assertions="1" />
   </testsuite>
 </testsuites>

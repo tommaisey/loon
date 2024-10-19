@@ -2,7 +2,8 @@
 -- A super-lighweight testing library.
 local export = {
     assert = {},
-    suite = {}
+    suite = {},
+    plugin = {}
 }
 
 -----------------------------------------------------------------------------
@@ -41,6 +42,7 @@ local iowrite = io.write
 local color = colored.yes
 
 -----------------------------------------------------------------------------
+-- Internal helper functions.
 -- Compose and write a formatted string to the default IO output file.
 local function writef(fstring, ...)
     iowrite(fmt(fstring, ...), '\n')
@@ -62,33 +64,12 @@ local function indent(text)
     return text:gsub('\n', '\n  ')
 end
 
------------------------------------------------------------------------------
--- Internal helper functions.
 local function clone(tbl)
     local cloned = {}
     for k, v in pairs(tbl) do
         cloned[k] = v
     end
     return cloned
-end
-
-local function deepEquals(a, b)
-    if type(a) == 'table' and type(b) == 'table' then
-        for ka, va in pairs(a) do
-            if not deepEquals(va, b[ka]) then
-                return false
-            end
-        end
-        for kb, vb in pairs(b) do
-            if not deepEquals(vb, a[kb]) then
-                return false
-            end
-        end
-
-        return true
-    end
-
-    return a == b
 end
 
 local function defaultFailMsg(srcLocation, ...)
@@ -119,113 +100,108 @@ local function equalsFailMsg(srcLocation, got, expected, text)
     return message .. srcLocation .. comparison
 end
 
+local function deepEquals(a, b)
+    if type(a) == 'table' and type(b) == 'table' then
+        for ka, va in pairs(a) do
+            if not deepEquals(va, b[ka]) then
+                return false
+            end
+        end
+        for kb, vb in pairs(b) do
+            if not deepEquals(vb, a[kb]) then
+                return false
+            end
+        end
+
+        return true
+    end
+
+    return a == b
+end
+
 --------------------------------------------------------------------------------------
 -- The stateful part of the library, so be careful!
 -- `tests` is the array of tests registered by user code so far.
 -- `asserts` is the tally of assertions that have run in a currently running test.
 local tests = {}
 local asserts = {successes = 0, failed = {}}
+local suitePathStack = {}
 local suiteDefault = {}
 local suiteNow = suiteDefault
-local suitePathStack = {}
 local suiteStack = {suiteNow}
+local pluginSummaries = {}
+local pluginSummariesOrdered = {}
 
---------------------------------------------------------------------------------------
--- Add a test to be run. This test should contain at least one
--- assertion from Loon's assert sub-modules. After adding
--- some tests, you must call `run()` to run the tests.
-function export.add(testName, testFunction)
-    insert(tests, {testName, testFunction, suiteNow})
-end
-
--- Begin a suite of tests. After this you should add some tests,
--- and then call `suite.stop()` to return to the parent/outer suite (if any)
-function export.suite.start(name)
-    insert(suitePathStack, name)
-    suiteNow = clone(suitePathStack)
-    insert(suiteStack, suiteNow)
-end
-
--- End a suite of tests. You will now be in the parent/outer suite (if any).
--- Although this need not take any arguments, you can supply the same name
--- you used for the corresponding call to `suite.start()` for readability
--- reasons if you like.
-function export.suite.stop(_name)
-    assert(#suitePathStack > 0 and #suiteStack > 0, "Your suite.start/stop calls are unmatched!")
-    remove(suitePathStack)
-    remove(suiteStack)
-    suiteNow = suiteStack[#suiteStack]
-end
-
--- If you prefer not to call `suite.start()` & `suite.stop()` manually,
--- you can use this to run a series of tests inside a named suite.
-function export.suite.with(name, functionContainingTests)
-    export.suite.start(name)
-    functionContainingTests()
-    export.suite.stop()
-end
-
--- Run a file of tests as a suite.
--- This allows you to run a collection of files,
--- each in their own suite.
-function export.suite.file(requirePath)
-    export.suite.start(requirePath)
-    require(requirePath)
-    export.suite.stop()
-end
-
--- Since this module is stateful, you may occasionally need to
--- reset it, if you want to do multiple independent test runs.
--- This deletes all the tests that have been added up to this
--- point, and clears the current suite scope.
-function export.clear()
+local function reset()
     tests = {}
     asserts = {successes = 0, failed = {}}
-    suiteNow = suiteDefault
     suitePathStack = {}
+    suiteNow = suiteDefault
     suiteStack = {suiteNow}
+    pluginSummaries = {}
+    pluginSummariesOrdered = {}
 end
 
 --------------------------------------------------------------------------------------
--- Allows you to create an assertion function that hooks into the loon
--- test system. The returned function will have the same arguments as
--- `yourAssert` (which should return `true`/`false`) and can be used
--- as an assertion in tests. You may also supply a function that creates
--- string describing failure. This should take a string describing the
--- source location of the failed assertion, followed by the same arguments
--- supplied to `yourAssert`.
---
--- @usage
--- local function stringsEqualIgnoringCase(a, b)
---     return a:lower() == b:lower()
--- end
---
--- local function stringsNotEqualFailMsg(srcLocation, a, b)
---     return string.format("%s: strings don't match: '%s' vs. '%s'", srcLocation, a, b)
--- end
---
--- -- Create an assertion function you can use inside tests:
--- local assertEqCaseInsensitive = loon.assert.create(stringsEqualIgnoringCase, caseInsensitiveFailMsg)
-function export.assert.create(yourAssert, failMsgFn)
-    failMsgFn = failMsgFn or defaultFailMsg
+-- Runs each test, calling the writeTest() function for each.
+-- Finally calls the writeSummary() function.
+local function runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
+    local function none() end
+    writeSuiteBegin = writeSuiteBegin or none
+    writeTest = writeTest or none
+    writeSuiteEnd = writeSuiteEnd or none
+    writeSummary = writeSummary or none
 
-    return function(...)
-        if yourAssert(...) then
-            asserts.successes = asserts.successes + 1
+    local testPasses, testFails = 0, 0
+    local assertPasses, assertFails = 0, 0
+
+    local noSuite = {}
+    local currentSuite = noSuite
+
+    for _, info in ipairs(tests) do
+        asserts.successes, asserts.failed = 0, {}
+        local name, fn, suite = info[1], info[2], info[3]
+        local noError, errorObj = xpcall(fn, function(errorMsg)
+            return {msg = errorMsg, trace = debug.traceback(nil, 8)}
+        end)
+
+        if suite ~= currentSuite then
+            if #suite <= #currentSuite and suite ~= suiteDefault then
+                writeSuiteEnd(currentSuite)
+            end
+
+            writeSuiteBegin(suite)
+            currentSuite = suite
+        end
+
+        local failures = asserts.failed
+        local numFails = #failures
+        local numSuccesses = asserts.successes
+        assertFails = assertFails + numFails
+        assertPasses = assertPasses + asserts.successes
+        errorObj = not noError and errorObj or nil -- in case test fn returned something
+
+        if errorObj or numFails > 0 then
+            testFails = testFails + 1
         else
-            local info = debug.getinfo(2, "S")
-            local lineinfo = debug.getinfo(2, "l")
-            local location = fmt('%s:%s: ', color.file(info.short_src), color.line(lineinfo.currentline))
-            insert(asserts.failed, failMsgFn(location, ...))
+            testPasses = testPasses + 1
+        end
+
+        writeTest(name, numSuccesses, numFails, failures, errorObj)
+    end
+
+    writeSummary(testPasses, testFails, assertPasses, assertFails)
+
+    for _, summary in ipairs(pluginSummariesOrdered) do
+        local result = summary()
+
+        if result ~= nil and result ~= 0 then
+            return result
         end
     end
+
+    return testFails
 end
-
-export.assert.equals = export.assert.create(deepEquals, equalsFailMsg)
-export.assert.eq = export.assert.equals -- alias
-
---------------------------------------------------------------------------------------
-local runWith -- filled in later
 
 -- Runs the tests, outputting the results in a friendly terminal format.
 local function runTerminal(config)
@@ -422,56 +398,115 @@ local function runJunit(config)
     return runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
 end
 
--- Runs each test, calling the writeTest() function for each.
--- Finally calls the writeSummary() function.
-function runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
-    local function none() end
-    writeSuiteBegin = writeSuiteBegin or none
-    writeTest = writeTest or none
-    writeSuiteEnd = writeSuiteEnd or none
-    writeSummary = writeSummary or none
+--------------------------------------------------------------------------------------
+-- The public part of the library.
 
-    local testPasses, testFails = 0, 0
-    local assertPasses, assertFails = 0, 0
+-- Add a test to be run. This test should contain at least one
+-- assertion from Loon's assert sub-modules. After adding
+-- some tests, you must call `run()` to run the tests.
+function export.add(testName, testFunction)
+    insert(tests, {testName, testFunction, suiteNow})
+end
 
-    local noSuite = {}
-    local currentSuite = noSuite
+-- Begin a suite of tests. After this you should add some tests,
+-- and then call `suite.stop()` to return to the parent/outer suite (if any)
+function export.suite.start(name)
+    insert(suitePathStack, name)
+    suiteNow = clone(suitePathStack)
+    insert(suiteStack, suiteNow)
+end
 
-    for _, info in ipairs(tests) do
-        asserts.successes, asserts.failed = 0, {}
-        local name, fn, suite = info[1], info[2], info[3]
-        local noError, errorObj = xpcall(fn, function(errorMsg)
-            return {msg = errorMsg, trace = debug.traceback(nil, 8)}
-        end)
+-- End a suite of tests. You will now be in the parent/outer suite (if any).
+-- Although this need not take any arguments, you can supply the same name
+-- you used for the corresponding call to `suite.start()` for readability
+-- reasons if you like.
+function export.suite.stop(_name)
+    assert(#suitePathStack > 0 and #suiteStack > 0, "Your suite.start/stop calls are unmatched!")
+    remove(suitePathStack)
+    remove(suiteStack)
+    suiteNow = suiteStack[#suiteStack]
+end
 
-        if suite ~= currentSuite then
-            if #suite <= #currentSuite and suite ~= suiteDefault then
-                writeSuiteEnd(currentSuite)
-            end
+-- If you prefer not to call `suite.start()` & `suite.stop()` manually,
+-- you can use this to run a series of tests inside a named suite.
+function export.suite.with(name, functionContainingTests)
+    export.suite.start(name)
+    functionContainingTests()
+    export.suite.stop()
+end
 
-            writeSuiteBegin(suite)
-            currentSuite = suite
-        end
+-- Run a file of tests as a suite.
+-- This allows you to run a collection of files,
+-- each in their own suite.
+function export.suite.file(requirePath)
+    export.suite.start(requirePath)
+    require(requirePath)
+    export.suite.stop()
+end
 
-        local failures = asserts.failed
-        local numFails = #failures
-        local numSuccesses = asserts.successes
-        assertFails = assertFails + numFails
-        assertPasses = assertPasses + asserts.successes
-        errorObj = not noError and errorObj or nil -- in case test fn returned something
-
-        if errorObj or numFails > 0 then
-            testFails = testFails + 1
-        else
-            testPasses = testPasses + 1
-        end
-
-        writeTest(name, numSuccesses, numFails, failures, errorObj)
+-- Allows plugins (such as the snapshot testing plugin) to register
+-- one or more functions that will be executed after the test run.
+-- Your function will receive no arguments, so its reliant on your
+-- internal state. If your function returns non-nil, and the value
+-- returned is not `0`, the test will exit before running any more
+-- summaries.
+--
+-- You MAY want to print some extra data from your plugin in a summary function.
+-- You MUST reset any internal plugin in a summary function.
+function export.plugin.summary(name, func)
+    -- We ignored duplicate summary functions, so that plugins can
+    -- idempotently re-declare them. This allows users to use and
+    -- configure a plugin multiple times without causing duplicates.
+    if pluginSummaries[name] then
+        return
     end
 
-    writeSummary(testPasses, testFails, assertPasses, assertFails)
-    return testFails
+    pluginSummaries[name] = func
+    insert(pluginSummariesOrdered, func)
 end
+
+--------------------------------------------------------------------------------------
+-- Allows you to create an assertion function that hooks into the loon
+-- test system. The returned function will have the same arguments as
+-- `yourAssert` (which should return `true`/`false`) and can be used
+-- as an assertion in tests. You may also supply a function that creates
+-- string describing failure. This should take a string describing the
+-- source location of the failed assertion, followed by the same arguments
+-- supplied to `yourAssert`.
+--
+-- This is of course very useful for plugins, such as the snapshot plugin.
+--
+-- @usage
+-- local function stringsEqualIgnoringCase(a, b)
+--     return a:lower() == b:lower()
+-- end
+--
+-- local function stringsNotEqualFailMsg(srcLocation, a, b)
+--     return string.format("%s: strings don't match: '%s' vs. '%s'", srcLocation, a, b)
+-- end
+--
+-- -- Create an assertion function you can use inside tests:
+-- local assertEqCaseInsensitive = loon.assert.create(stringsEqualIgnoringCase, caseInsensitiveFailMsg)
+function export.assert.create(yourAssert, failMsgFn)
+    failMsgFn = failMsgFn or defaultFailMsg
+
+    return function(...)
+        if yourAssert(...) then
+            asserts.successes = asserts.successes + 1
+        else
+            local info = debug.getinfo(2, "S")
+            local lineinfo = debug.getinfo(2, "l")
+            local location = fmt('%s:%s: ', color.file(info.short_src), color.line(lineinfo.currentline))
+            insert(asserts.failed, failMsgFn(location, ...))
+        end
+    end
+end
+
+-- The main (currently only) assertion function is `equals`, aliased to `eq`,
+-- which compares two values for equality. This is a deep comparison, meaning
+-- that tables are compared recursively.
+export.assert.equals = export.assert.create(deepEquals, equalsFailMsg)
+export.assert.eq = export.assert.equals -- alias
 
 --------------------------------------------------------------------------------------
 -- Runs the tests, outputting the results in one of several ways,
@@ -483,7 +518,9 @@ function export.run(config, configDefaults)
     }
 
     config = args.verify(config, argspec, argdefaults, configDefaults)
-    return outputs[config.output](config)
+    local result = outputs[config.output](config)
+    reset()
+    return result
 end
 
 return export

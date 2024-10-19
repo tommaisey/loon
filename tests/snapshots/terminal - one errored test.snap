@@ -1,9 +1,0 @@
-[34mdefault suite[0m
-[31mx[0m jabberwock
-  ([31mERROR[0m) [36mtests/terminal-output.lua[0m:[36m74[0m: I did a boo-boo
-    stack traceback:
-  	tests/terminal-output.lua:290: in main chunk
-  	[C]: in ?
---------------------------
-[32mpass[0m: [32m0[0m tests, [32m0[0m assertions
-[31mfail[0m: [31m1[0m tests, [31m0[0m assertions

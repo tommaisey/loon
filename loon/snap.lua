@@ -1,3 +1,4 @@
+local loon = require('loon')
 local export = {}
 
 local args = require('loon.args')
@@ -20,7 +21,6 @@ local argdefaults = {
 -----------------------------------------------------------------------------
 -- Cache some globals for speed.
 local fmt = string.format
-local tostring = tostring
 local insert = table.insert
 local iowrite = io.write
 
@@ -29,11 +29,6 @@ local function writef(fstring, ...)
 end
 local function writefNoNewline(fstring, ...)
     iowrite(fmt(fstring, ...))
-end
-
--- Always indent by 2 spaces, don't indent initial line
-local function indent(text)
-    return text:gsub('\n', '\n  ')
 end
 
 local function diff(actual, expectedPath)
@@ -49,97 +44,119 @@ local function diff(actual, expectedPath)
     return text
 end
 
------------------------------------------------------------------------------
-local tests = {}
+--------------------------------------------------------------------------------------
+-- The stateful part of the library, so be careful!
 local testNames = {}
-local printResults, runUpdate -- filled in later
+local runUpdate -- filled in later
+local dir
+local pass, fail, new, kind, ordered = {}, {}, {}, {}, {}
+local function reset()
+    pass, fail, new, kind, ordered = {}, {}, {}, {}, {}
+end
 
-function export.test(name, actual)
+--------------------------------------------------------------------------------------
+local function compareVsFile(name, actual)
     if testNames[name] then
-        writef(
-            '%s: duplicate test name: "%s".\nOnly one of these tests will run.',
-            color.warn('Warning'), color.file(name)
-        )
+        writef('%s: duplicate snapshot name!\nonly one of these will run: \'%s\'', color.warn('warning'), name)
+        return
+    end
+
+    testNames[name] = true
+    local path = assert(dir, 'no snapshot directory set') .. name .. '.snap'
+    local file = io.open(path, 'r')
+
+    if file == nil then
+        kind[name] = 'new'
+        insert(new, {name = name, path = path, actual = actual})
+        insert(ordered, {result = 'new', name = name})
+        return false
+    end
+
+    local saved = file:read('a')
+    file:close()
+
+    if saved == actual then
+        kind[name] = 'pass'
+        insert(pass, {name = name})
+        insert(ordered, {result = 'pass', name = name})
+        return true
     else
-        insert(tests, {name, tostring(actual)})
-        testNames[name] = true
+        kind[name] = 'fail'
+        insert(fail, {name = name, path = path, actual = actual})
+        insert(ordered, {result = 'fail', name = name, path = path, actual = actual})
+        return false
     end
 end
 
-function export.run(config, configDefaults)
-    config = args.verify(config, argspec, argdefaults, configDefaults)
-    color = config.uncolored and colored.no or colored.yes
-    assert(config.dir, 'you failed to configure the output directory. '
+local function compareVsOutput(name, testFn)
+    local path = os.tmpname()
+    local output = assert(io.open(path, 'w+'), "test runner couldn't open temporary file")
+    io.output(output)
+
+    testFn()
+
+    io.output(io.stdout)
+    output:close()
+    output = io.open(path, 'r')
+    local actual = output:read('a')
+    output:close()
+    os.remove(path)
+
+    return compareVsFile(name, actual)
+end
+
+local function failMsg(srcLocation, name, actual)
+    if kind[name] == 'new' then
+        return srcLocation .. fmt('new test: \'%s\'', name)
+    end
+    if type(actual) == 'function' then
+        assert(ordered[#ordered].name == name)
+        actual = ordered[#ordered].actual
+    end
+    local path = assert(dir, 'no snapshot directory set') .. name .. '.snap'
+    return srcLocation .. '\n' .. diff(actual, path)
+end
+
+--------------------------------------------------------------------------------------
+-- The public part of the library
+
+-- The function used to do a snapshot assertion inside a loon test.
+-- It takes (name, result), where the result is the output your code
+-- makes today. The result will be compared against a file in the
+-- configured directory (see `config()`) with the filename `name`.
+-- This means that
+export.compare = loon.assert.create(compareVsFile, failMsg)
+
+-- Like `compare()`, except it captures anything written to `io.output()`
+-- by `testFn` and uses that as the snapshot, instead of a string supplied
+-- directly by you.
+export.output = loon.assert.create(compareVsOutput, failMsg)
+
+-- Configure the snapshot tests. This must be done before running any
+-- snapshot tests, and it must configure the snapshot directory that
+-- will be used.
+function export.config(configOrArgs, configDefaults)
+    local config = args.verify(configOrArgs, argspec, argdefaults, configDefaults)
+
+    assert(config.dir, 'you failed to configure the output directory.\n'
         .. 'pass the --dir argument at the terminal, or "dir" element in the config.')
 
-    local dir = config.dir:gsub('[\\/]$', '') .. '/'
+    dir = config.dir:gsub('[\\/]$', '') .. '/'
 
-    local pass, fail, new, ordered = {}, {}, {}, {}
-
-    for _, elem in ipairs(tests) do
-        local name, actual = elem[1], elem[2]
-        local path = dir .. name .. '.snap'
-        local file = io.open(path, 'r')
-
-        if file == nil then
-            insert(new, {name = name, path = path, actual = actual})
-            insert(ordered, {result = 'new', name = name})
-        else
-            local saved = file:read('a')
-            file:close()
-
-            if saved == actual then
-                insert(pass, {name = name})
-                insert(ordered, {result = 'pass', name = name})
-            else
-                insert(fail, {name = name, path = path, actual = actual})
-                insert(ordered, {result = 'fail', name = name, path = path, actual = actual})
-            end
+    loon.plugin.summary('snapshot: print new tests', function()
+        if #new > 0 then
+            writef('%s: %s tests', color.fail('new snapshots'), color.fail(#new))
         end
-    end
+    end)
 
     if config.update then
-        return runUpdate(ordered, pass, fail, new)
-    else
-        return printResults(ordered, pass, fail, new, config.terse)
+        loon.plugin.summary('snapshot: update', runUpdate)
     end
+
+    loon.plugin.summary('snapshot: reset self', reset)
 end
 
-function printResults(ordered, pass, fail, new, terse)
-    for _, elem in ipairs(ordered) do
-        if elem.result == 'pass' then
-            if not terse then
-                writef('%s %s', color.pass('+'), elem.name)
-            end
-        elseif elem.result == 'fail' then
-            writef('%s %s', color.fail('x'), elem.name)
-            writef('  ' .. indent(diff(elem.actual, elem.path)))
-        elseif elem.result == 'new' then
-            writef('%s %s', color.fail('new!'), elem.name)
-        else
-            error('logic error')
-        end
-    end
-
-    if #fail > 0 or #new > 0 then
-        writef('\n--------------------------')
-        writef('%s: %s tests', color.pass('pass'), color.pass(#pass))
-        writef('%s: %s tests', color.fail('fail'), color.fail(#fail))
-
-        if #new > 0 then
-            writef('%s: %s tests', color.fail('new'), color.fail(#new))
-        end
-    else
-        if not terse then
-            writef('\n--------------------------')
-        end
-        writef('%s: %s', color.pass('all tests pass'), color.pass(#pass))
-    end
-
-    return #fail
-end
-
-function runUpdate(_, pass, fail, new)
+function runUpdate()
     local anyActionRequired = #fail > 0 or #new > 0
     local yes = color.pass('Y')
     local no = color.fail('N')
@@ -147,17 +164,17 @@ function runUpdate(_, pass, fail, new)
     if anyActionRequired then
         if #fail > 0 and #new > 0 then
             writefNoNewline(
-                'actions required.\n%d %s tests and %d %s tests. proceed? %s/%s ',
+                'snapshot actions required.\n%d %s tests and %d %s tests. proceed? %s/%s ',
                 #new, color.pass('new'), #fail, color.fail('failed'), yes, no
             )
         elseif #fail > 0 then
             writefNoNewline(
-                'actions required.\n%d %s tests. proceed? %s/%s ',
+                'snapshot actions required.\n%d %s tests. proceed? %s/%s ',
                 #fail, color.fail('failed'), yes, no
             )
         else
             writefNoNewline(
-                'actions required.\n%d %s tests. proceed? %s/%s ',
+                'snapshot actions required.\n%d %s tests. proceed? %s/%s ',
                 #new, color.pass('new'), yes, no
             )
         end
@@ -215,8 +232,6 @@ function runUpdate(_, pass, fail, new)
 
     if anyActionRequired then
         writef('%s! all files up-to-date.', color.pass('done'))
-    else
-        writef('%s: %s', color.pass('all tests pass'), color.pass(#pass))
     end
 
     return 0

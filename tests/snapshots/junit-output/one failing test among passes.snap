@@ -6,7 +6,7 @@
     <testcase name="jabberwock" classname="default" assertions="1" />
     <testcase name="brillig" classname="default" assertions="2" />
     <testcase name="slithy" classname="default" assertions="1">
-      <failure message="tests/junit-output.lua:106: expected: 5, got: 3"></failure>
+      <failure message="tests/junit-output.lua:97: expected: 5, got: 3"></failure>
     </testcase>
     <testcase name="mimsy" classname="default" assertions="1" />
   </testsuite>
