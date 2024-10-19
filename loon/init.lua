@@ -64,7 +64,6 @@ end
 
 -----------------------------------------------------------------------------
 -- Internal helper functions.
-
 local function clone(tbl)
     local cloned = {}
     for k, v in pairs(tbl) do
@@ -92,13 +91,19 @@ local function deepEquals(a, b)
     return a == b
 end
 
-local function failMsg(stackLevel, got, expected, text)
+local function defaultFailMsg(srcLocation, ...)
+    if select(..., '#') == 0 then
+        return fmt('%s: assertion failed (no arguments)', srcLocation)
+    end
+
+    local arguments = {...}
+    for i, a in ipairs(arguments) do arguments[i] = fmt('%q', a) end
+
+    return fmt('%s: assertion failed with arguments: %s', srcLocation, table.concat(arguments, ', '))
+end
+
+local function equalsFailMsg(srcLocation, got, expected, text)
     local message = text and fmt("%s\n", color.msg(text)) or ''
-
-    local info = debug.getinfo(stackLevel + 1, "S")
-    local lineinfo = debug.getinfo(stackLevel + 1, "l")
-    local location = fmt('%s:%s: ', color.file(info.short_src), color.line(lineinfo.currentline))
-
     local comparison
     expected = color.value(stringify(expected))
     got = color.fail(stringify(got))
@@ -111,7 +116,7 @@ local function failMsg(stackLevel, got, expected, text)
         comparison = fmt('expected: \n%s.\ngot: \n%s', expected, got)
     end
 
-    return message .. location .. comparison
+    return message .. srcLocation .. comparison
 end
 
 --------------------------------------------------------------------------------------
@@ -182,14 +187,41 @@ function export.clear()
 end
 
 --------------------------------------------------------------------------------------
-function export.assert.equals(got, expected, text)
-    if deepEquals(got, expected) then
-        asserts.successes = asserts.successes + 1
-    else
-        insert(asserts.failed, failMsg(2, got, expected, text))
+-- Allows you to create an assertion function that hooks into the loon
+-- test system. The returned function will have the same arguments as
+-- `yourAssert` (which should return `true`/`false`) and can be used
+-- as an assertion in tests. You may also supply a function that creates
+-- string describing failure. This should take a string describing the
+-- source location of the failed assertion, followed by the same arguments
+-- supplied to `yourAssert`.
+--
+-- @usage
+-- local function stringsEqualIgnoringCase(a, b)
+--     return a:lower() == b:lower()
+-- end
+--
+-- local function stringsNotEqualFailMsg(srcLocation, a, b)
+--     return string.format("%s: strings don't match: '%s' vs. '%s'", srcLocation, a, b)
+-- end
+--
+-- -- Create an assertion function you can use inside tests:
+-- local assertEqCaseInsensitive = loon.assert.create(stringsEqualIgnoringCase, caseInsensitiveFailMsg)
+function export.assert.create(yourAssert, failMsgFn)
+    failMsgFn = failMsgFn or defaultFailMsg
+
+    return function(...)
+        if yourAssert(...) then
+            asserts.successes = asserts.successes + 1
+        else
+            local info = debug.getinfo(2, "S")
+            local lineinfo = debug.getinfo(2, "l")
+            local location = fmt('%s:%s: ', color.file(info.short_src), color.line(lineinfo.currentline))
+            insert(asserts.failed, failMsgFn(location, ...))
+        end
     end
 end
 
+export.assert.equals = export.assert.create(deepEquals, equalsFailMsg)
 export.assert.eq = export.assert.equals -- alias
 
 --------------------------------------------------------------------------------------
