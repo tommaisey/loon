@@ -37,7 +37,7 @@ local function diff(actual, expectedPath)
     assert(file:write(actual))
     file:close()
 
-    local diffHandle = io.popen(fmt('diff --color=always "%s" "%s"', expectedPath, tmpPath))
+    local diffHandle = io.popen(fmt('git diff "%s" "%s"', expectedPath, tmpPath))
     local text = assert(diffHandle, 'Could not run diff program'):read('a')
     diffHandle:close()
     os.remove(tmpPath)
