@@ -62,6 +62,28 @@ You can group your tests into suites, which can be nested.
 ```lua
 local test = require('loon')
 
+test.suite.add('first suite', function()
+    test.add('test one', function()
+        test.assert.eq(1 + 1, 2, 'must be in a euclidean universe')
+    end)
+end)
+
+test.suite.add('second suite', function()
+    test.add('test two', function()
+        test.assert.eq(2 + 2, 4, '2 + 2 must equal 4')
+    end)
+end)
+
+test.run()
+```
+
+If you don't want to indent all the tests inside a suite, you can use matching statements
+of `suite.start` and `suite.stop`. However, you must be careful not to forget a `stop` statement.
+This example results in exactly the same output as the first example.
+
+```lua
+local test = require('loon')
+
 test.suite.start('first suite')
 
 test.add('test one', function()
@@ -81,28 +103,8 @@ test.suite.stop('second suite')
 test.run()
 ```
 
-If you prefer, you can start and stop the suite in a single statement, using `with`.
-This results in exactly the same output as the first example.
-
-```lua
-local test = require('loon')
-
-test.suite.with('first suite', function()
-    test.add('test one', function()
-        test.assert.eq(1 + 1, 2, 'must be in a euclidean universe')
-    end)
-end)
-
-test.suite.with('second suite', function()
-    test.add('test two', function()
-        test.assert.eq(2 + 2, 4, '2 + 2 must equal 4')
-    end)
-end)
-
-test.run()
-```
-
-If you prefer to split your tests into multiple files, each being a test suite, you can do so like this.
+If you prefer to split your tests into multiple files, each being a test suite, you can do so with `suite.file`,
+which behaves just like Lua's `require`, but wraps the file into a test suite.
 
 ```lua
 -- first-suite.lua

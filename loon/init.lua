@@ -429,7 +429,7 @@ end
 
 -- If you prefer not to call `suite.start()` & `suite.stop()` manually,
 -- you can use this to run a series of tests inside a named suite.
-function export.suite.with(name, functionContainingTests)
+function export.suite.add(name, functionContainingTests)
     export.suite.start(name)
     functionContainingTests()
     export.suite.stop()

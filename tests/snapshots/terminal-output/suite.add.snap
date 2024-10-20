@@ -1,0 +1,10 @@
+[34msuite 1[0m
+[32m+[0m jabberwock [[32m1[0m pass]
+[32m+[0m brillig [[32m2[0m pass]
+[34msuite 2[0m
+[32m+[0m slithy [[32m1[0m pass]
+[34msuite 2[0m > [34msuite 3[0m
+[32m+[0m mimsy [[32m1[0m pass]
+--------------------------
+[32mall tests pass[0m: [32m4[0m
+assertions: 5
