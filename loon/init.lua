@@ -17,12 +17,14 @@ local argsBase = {
     output = {'terminal', 'junit'},
     uncolored = {true, false},
     terse = {true, false},
-    times = {true, false}
+    times = {true, false},
+    help = {true, false}
 }
 
 local argsBaseDefaults = {
     uncolored = os.getenv('NO_COLOR'),
     times = true,
+    help = false,
     output = 'terminal'
 }
 
@@ -563,12 +565,23 @@ export.assert.eq = export.assert.equals -- alias
 -- Runs the tests, outputting the results in one of several ways,
 -- depending on the configuration table.
 function export.run(config, configDefaults)
+    config = args.verify(config, argsMerged, argsMergedDefaults, configDefaults)
+
+    if config.help then
+        writef('A Lua test suite written with Loon.\n')
+        writef('%s %s   %s', color.pass('--output'), color.value('"terminal|junit"'), 'choose the output format (default: terminal)')
+        writef('%s                 %s', color.pass('--uncolored'), 'disable colors (default: off)')
+        writef('%s                     %s', color.pass('--terse'), 'skip printing passing tests (default: off)')
+        writef('%s                     %s', color.pass('--times'), 'note times in junit output (default: on)')
+        writef('%s                      %s', color.pass('--help'), 'print this message')
+        os.exit(0)
+    end
+
     local outputs = {
         terminal = runTerminal,
         junit = runJunit
     }
 
-    config = args.verify(config, argsMerged, argsMergedDefaults, configDefaults)
     local result = outputs[config.output](config)
     reset()
     return result

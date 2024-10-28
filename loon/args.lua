@@ -57,7 +57,7 @@ local function isArgsList(config)
     end
 end
 
-local function convertIfArgs(config, specs)
+local function convertIfArgs(config, specs, ignoreUnrecognized)
     if config == nil then
         return {}
     elseif not isArgsList(config) then
@@ -71,43 +71,60 @@ local function convertIfArgs(config, specs)
         local item = config[idx]
         if item == nil then break end
 
-        local valueAfterEquals
+        local value
+        local isBooleanSwitch
         local name = item:match('^%-*(.+)$')
         assert(name, "malformed argument: " .. name)
 
         if name:find('=') then
-            local name2, value2 = name:match('([^=]+)=([^=]+)')
+            name, value = name:match('([^=]+)=([^=]+)')
 
-            if not name2 or not value2 or #name2 == 0 or #value2 == 0 then
-                error("malformed argument with '=' syntax: " .. name)
+            if not name or not value or #name == 0 or #value == 0 then
+                error("malformed argument with '=' syntax: '" .. item .. "'")
             end
 
-            name, valueAfterEquals = name2, value2
+            idx = idx + 1
+        else
+            local nextItem = config[idx + 1]
+
+            if nextItem ~= nil and not nextItem:find('^%-') then
+                value = nextItem
+                idx = idx + 2
+            else
+                isBooleanSwitch = true
+                idx = idx + 1
+            end
         end
 
         local spec = specs[name]
 
         if spec == nil then
-            error("unrecognized argument: " .. name)
-        end
-
-        idx = idx + 1
-        local value
-
-        if ofType(spec, 'boolean') then
-            value = true
-        elseif valueAfterEquals then
-            value = valueAfterEquals:match('["\']?([^"\']+)')
+            if not ignoreUnrecognized then
+                error("unrecognized argument: " .. name)
+            end
         else
-            value = config[idx]
-            idx = idx + 1
-        end
+            if value then
+                value = value:match('["\']?([^"\']+)')
+            end
 
-        if ofType(spec, 'number') then
-            value = assert(tonumber(value), "couldn't convert argument to a number: " .. value)
-        end
+            if ofType(spec, 'boolean') then
+                if value == nil then
+                    value = assert(isBooleanSwitch) -- true
+                else
+                    if value == 'true' then
+                        value = true
+                    elseif value == 'false' then
+                        value = false
+                    else
+                        error(fmt("expected 'true' or 'false' value for '%s', got: '%s'", name, value))
+                    end
+                end
+            elseif ofType(spec, 'number') then
+                value = assert(tonumber(value), "couldn't convert argument to a number: " .. value)
+            end
 
-        convertedConfig[name] = value
+            convertedConfig[name] = value
+        end
     end
 
     return convertedConfig
@@ -145,9 +162,9 @@ local function applyDefaults(config, defaults)
 end
 
 ---------------------------------------------------------------------------
-function export.verify(config, spec, defaults, userDefaults)
+function export.verify(config, spec, defaults, userDefaults, ignoreUnrecognized)
     assert(spec, 'args spec is required')
-    config = convertIfArgs(config, spec)
+    config = convertIfArgs(config, spec, ignoreUnrecognized)
 
     -- Apply user defaults first, to override system defaults
     applyDefaults(config, userDefaults)

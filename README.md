@@ -2,7 +2,7 @@
 
 `loon` is a test library for the Lua programming language, with the following goals:
 
-- Small, with no external dependencies (embeds the `serpent` library for pretty-printing)
+- Small, with zero external dependencies (embeds the `serpent` library for pretty-printing)
 - Simple and attractive API, with no globals
 - Equally easy to run from the terminal or programatically
 - Beautiful output
@@ -40,19 +40,26 @@ $ lua tests.lua
 ```
 
 If you want to control the output more, you can do that one of two ways.
-First, you could pass a config table to the `run()` function:
+
+You can pass a config table to the `run()` function, or you can pass the
+Lua `arg` global, which contains the command-line arguments. You can combine
+these approaches, taking configuration from the command-line or a fallback
+config for items that weren't specified.
 
 ``` lua
+-- explicit config
 test.run({uncolored = true, terse = true})
+-- use command-line arguments
+test.run(arg)
+-- use command-line arguments with default fallbacks
+test.run(arg, {uncolored = true, terse = true})
 ```
 
-Or, you could pass arguments to the program at the command line.
-To do this, you will have to forward the `arg` global table, which in
-Lua represent the command line arguments. To find out more about the
-config and command line arguments that are accepted, see [below](#config).
+To find out which arguments are supported, you can run with the `--help` flag.
 
-``` lua
-test.run(arg)
+```lua
+$ lua tests/my-tests.lua --help
+
 ```
 
 ## suites

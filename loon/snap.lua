@@ -8,14 +8,10 @@ local color = colored.yes
 local argsBase = {
     dir = 'string',
     update = {true, false},
-    uncolored = {true, false},
-    terse = {true, false}
 }
 
 local argsBaseDefaults = {
-    uncolored = false,
     update = false,
-    terse = false
 }
 
 -----------------------------------------------------------------------------
@@ -150,7 +146,7 @@ export.output = loon.assert.create(compareVsOutput, failMsg)
 -- snapshot tests, and it must configure the snapshot directory that
 -- will be used.
 function export.config(configOrArgs, configDefaults)
-    local config = args.verify(configOrArgs, argsBase, argsBaseDefaults, configDefaults)
+    local config = args.verify(configOrArgs, argsBase, argsBaseDefaults, configDefaults, 'ignoreUnrecognised')
 
     assert(config.dir, 'you failed to configure the output directory.\n'
         .. 'pass the --dir argument at the terminal, or "dir" element in the config.')

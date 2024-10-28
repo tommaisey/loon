@@ -21,7 +21,6 @@ test.add('two booleans', function()
 
     eq(verify({'--one', '--two'}, spec), ex)
     eq(verify({'-one', '-two'}, spec), ex)
-    eq(verify({'one', 'two'}, spec), ex)
 end)
 
 test.add('booleans mixed with values', function()
@@ -56,6 +55,19 @@ test.add('values supplied with = syntax', function()
     eq(verify({'--one', '--three=\'b\'', '--two'}, spec), exB)
 end)
 
+test.add('booleans supplied with = syntax', function()
+    local spec = {
+        one = {true, false},
+        two = {true, false},
+        three = {true, false}
+    }
+
+    eq(verify({'--one', '--two', 'false', '--three'}, spec), {one = true, two = false, three = true})
+    eq(verify({'--one', '--two', '--three', 'false'}, spec), {one = true, two = true, three = false})
+    eq(verify({'--one=false', '--two=false', '--three', 'false'}, spec), {one = false, two = false, three = false})
+    eq(verify({'--one="false"', '--three', '"false"'}, spec), {one = false, three = false})
+end)
+
 test.add('values supplied as number', function()
     local spec = {
         one = {true, false},
@@ -66,6 +78,7 @@ test.add('values supplied as number', function()
     local ex5 = {one = true, two = true, three = 5}
 
     eq(verify({'--one', '--three=4', '--two'}, spec), ex4)
+    eq(verify({'--one', '--three', '4', '--two'}, spec), ex4)
     eq(verify({'--one', '--three=5', '--two'}, spec), ex5)
     eq(verify({'--one', '--three="4"', '--two'}, spec), ex4)
     eq(verify({'--one', '--three="5"', '--two'}, spec), ex5)
