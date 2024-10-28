@@ -5,14 +5,14 @@ local args = require('loon.args')
 local colored = require('loon.color')
 local color = colored.yes
 -----------------------------------------------------------------------------
-local argspec = {
+local argsBase = {
     dir = 'string',
     update = {true, false},
     uncolored = {true, false},
     terse = {true, false}
 }
 
-local argdefaults = {
+local argsBaseDefaults = {
     uncolored = false,
     update = false,
     terse = false
@@ -56,7 +56,7 @@ end
 
 --------------------------------------------------------------------------------------
 local function compareVsFile(name, actual, transformer)
-    local dir = assert(loon.plugin.getConfig(), 'no snapshot directory set')
+    local dir = assert(loon.plugin.getCustomData(), 'no snapshot directory set')
     local qualifiedName = dir .. ' ' .. name
 
     if testNames[qualifiedName] then
@@ -150,12 +150,12 @@ export.output = loon.assert.create(compareVsOutput, failMsg)
 -- snapshot tests, and it must configure the snapshot directory that
 -- will be used.
 function export.config(configOrArgs, configDefaults)
-    local config = args.verify(configOrArgs, argspec, argdefaults, configDefaults)
+    local config = args.verify(configOrArgs, argsBase, argsBaseDefaults, configDefaults)
 
     assert(config.dir, 'you failed to configure the output directory.\n'
         .. 'pass the --dir argument at the terminal, or "dir" element in the config.')
 
-    loon.plugin.config(config.dir:gsub('[\\/]$', '') .. '/')
+    loon.plugin.config(argsBase, argsBaseDefaults, config.dir:gsub('[\\/]$', '') .. '/')
 
     loon.plugin.summary('snapshot: print new tests', function()
         if #new > 0 then

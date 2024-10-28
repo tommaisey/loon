@@ -9,7 +9,7 @@
   <testsuite name="suite 2">
     <properties><property name="Lua Version" value="Lua 5.4" /></properties>
     <testcase name="slithy" classname="suite 2" assertions="1">
-      <failure message="tests/junit-output.lua:223: expected: 5, got: 3"></failure>
+      <failure message="tests/junit-output.lua:222: expected: 5, got: 3"></failure>
     </testcase>
   </testsuite>
   <testsuite name="suite 2 > suite 3">

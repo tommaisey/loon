@@ -13,14 +13,14 @@ local colored = require('loon.color')
 local args = require('loon.args')
 
 -----------------------------------------------------------------------------
-local argspec = {
+local argsBase = {
     output = {'terminal', 'junit'},
     uncolored = {true, false},
     terse = {true, false},
     times = {true, false}
 }
 
-local argdefaults = {
+local argsBaseDefaults = {
     uncolored = os.getenv('NO_COLOR'),
     times = true,
     output = 'terminal'
@@ -136,6 +136,8 @@ local suiteStack = {suiteNow}
 local pluginSummaries = {}
 local pluginSummariesOrdered = {}
 local pluginConfig
+local argsMerged = clone(argsBase)
+local argsMergedDefaults = clone(argsBaseDefaults)
 
 local function reset()
     tests = {}
@@ -146,6 +148,8 @@ local function reset()
     pluginSummaries = {}
     pluginSummariesOrdered = {}
     pluginConfig = nil
+    argsMerged = clone(argsBase)
+    argsMergedDefaults = clone(argsBaseDefaults)
 end
 
 --------------------------------------------------------------------------------------
@@ -465,6 +469,29 @@ function export.grouped(...)
     export.run = run
 end
 
+--------------------------------------------------------------------------------------
+-- Allows a plugin to set a temporary configuration which is saved
+-- alongside each test added thereafter. This can be retrieved when
+-- the test runs using `getConfig()`, so that the plugin can adjust
+-- behaviour according to the config that was set for that region
+-- of code.
+function export.plugin.config(arguments, defaults, customData)
+    for k, v in pairs(arguments) do
+        argsMerged[k] = v
+    end
+    for k, v in pairs(defaults) do
+        argsMergedDefaults[k] = v
+    end
+
+    pluginConfig = customData
+end
+
+-- Get the custom data that was set at the time that the current
+-- (running) test was defined by `plugin.config()`
+function export.plugin.getCustomData()
+    return pluginConfig
+end
+
 -- Allows plugins (such as the snapshot testing plugin) to register
 -- one or more functions that will be executed after the test run.
 -- Your function will receive no arguments, so its reliant on your
@@ -484,19 +511,6 @@ function export.plugin.summary(name, func)
 
     pluginSummaries[name] = func
     insert(pluginSummariesOrdered, func)
-end
-
--- Allows a plugin to set a temporary configuration which is saved
--- alongside every test. This can then be retrieved when running
--- the test with `getConfig()`, so that the plugin can adjust its
--- behaviour according to the config that was set for that region
--- of code.
-function export.plugin.config(data)
-    pluginConfig = data
-end
-
-function export.plugin.getConfig()
-    return pluginConfig
 end
 
 --------------------------------------------------------------------------------------
@@ -554,7 +568,7 @@ function export.run(config, configDefaults)
         junit = runJunit
     }
 
-    config = args.verify(config, argspec, argdefaults, configDefaults)
+    config = args.verify(config, argsMerged, argsMergedDefaults, configDefaults)
     local result = outputs[config.output](config)
     reset()
     return result

@@ -300,4 +300,4 @@ test.add('table output', function()
 end)
 
 test.suite.stop('terminal output')
-test.run()
+test.run(arg)

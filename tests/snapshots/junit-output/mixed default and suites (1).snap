@@ -5,7 +5,7 @@
     <properties><property name="Lua Version" value="Lua 5.4" /></properties>
     <testcase name="jabberwock" classname="default" assertions="1" />
     <testcase name="slithy" classname="default" assertions="1">
-      <failure message="tests/junit-output.lua:178: expected: 5, got: 3"></failure>
+      <failure message="tests/junit-output.lua:177: expected: 5, got: 3"></failure>
     </testcase>
   </testsuite>
   <testsuite name="suite 1">

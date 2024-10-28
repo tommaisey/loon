@@ -13,10 +13,9 @@ local snap = require('loon.snap')
 local test = require('loon') -- copy that runs these tests
 local loon = assert(loadfile('loon/init.lua'))() -- copy that runs tests to generate snapshots
 local eq = loon.assert.equals
+local junit = {output = 'junit', times = false} -- config for junit output
 
 snap.config(arg, {dir = "tests/snapshots/junit-output"})
-
-local junit = {output = 'junit', times = false}
 
 -- Since the tests may be run from this file directly, or indirectly
 -- via 'all.lua', we normalize the file path in error traces so that
@@ -252,4 +251,4 @@ test.add('table output', function()
 end)
 
 test.suite.stop('junit output')
-test.run()
+test.run(arg)
