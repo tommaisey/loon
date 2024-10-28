@@ -18,6 +18,15 @@ snap.config(arg, {dir = "tests/snapshots/junit-output"})
 
 local junit = {output = 'junit', times = false}
 
+-- Since the tests may be run from this file directly, or indirectly
+-- via 'all.lua', we normalize the file path in error traces so that
+-- it is the same in both contexts, and the tests will pass.
+local function normalizeFilePath(msg)
+    return msg
+        :gsub('junit%-output%.lua:%d+: in main chunk', '[[path normalized for test]]')
+        :gsub('all%.lua:%d+: in main chunk', '[[path normalized for test]]')
+end
+
 -----------------------------------------------------------------------------
 test.suite.start('junit output')
 
@@ -60,7 +69,7 @@ test.add('basics', function()
         end)
 
         loon.run(junit)
-    end)
+    end, normalizeFilePath)
 
     snap.output('one failing test with one assertion failing among passes', function()
         loon.add('jabberwock', function()

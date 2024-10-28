@@ -1,6 +1,6 @@
 default suite
 x flat [3 fail, 0 pass]
-  (1) tests/terminal-output.lua:277: 
+  (1) tests/terminal-output.lua:286: 
   expected: {
     a = 1,
     b = 3
@@ -8,7 +8,7 @@ x flat [3 fail, 0 pass]
     a = 1,
     b = 2
   }
-  (2) tests/terminal-output.lua:278: 
+  (2) tests/terminal-output.lua:287: 
   expected: {
     a = 1,
     c = 2
@@ -16,7 +16,7 @@ x flat [3 fail, 0 pass]
     a = 1,
     b = 2
   }
-  (3) tests/terminal-output.lua:279: 
+  (3) tests/terminal-output.lua:288: 
   expected: {
     1,
     2,
@@ -30,7 +30,7 @@ x flat [3 fail, 0 pass]
   }
 
 x string [1 fail, 0 pass]
-  (1) tests/terminal-output.lua:282: 
+  (1) tests/terminal-output.lua:291: 
   expected: {
     a = 1,
     b = "byes"
@@ -40,7 +40,7 @@ x string [1 fail, 0 pass]
   }
 
 x nested [1 fail, 0 pass]
-  (1) tests/terminal-output.lua:285: 
+  (1) tests/terminal-output.lua:294: 
   expected: {
     a = 1,
     b = {

@@ -16,6 +16,15 @@ local eq = loon.assert.equals
 
 snap.config(arg, {dir = "tests/snapshots/terminal-output"})
 
+-- Since the tests may be run from this file directly, or indirectly
+-- via 'all.lua', we normalize the file path in error traces so that
+-- it is the same in both contexts, and the tests will pass.
+local function normalizeFilePath(msg)
+    return msg
+        :gsub('terminal%-output%.lua:%d+: in main chunk', '[[path normalized for test]]')
+        :gsub('all%.lua:%d+: in main chunk', '[[path normalized for test]]')
+end
+
 -----------------------------------------------------------------------------
 test.suite.start('terminal output')
 
@@ -58,7 +67,7 @@ test.add('basics', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeFilePath)
 
     snap.output('one failing test with one assertion failing among passes', function()
         loon.add('jabberwock', function()

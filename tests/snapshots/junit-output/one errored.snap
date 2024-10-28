@@ -4,16 +4,16 @@
   <testsuite name="default">
     <properties><property name="Lua Version" value="Lua 5.4" /></properties>
     <testcase name="jabberwock" classname="default" assertions="0">
-      <error message="tests/junit-output.lua:59: I did a boo-boo">
+      <error message="tests/junit-output.lua:68: I did a boo-boo">
         <![CDATA[stack traceback:
-	loon/snap.lua:96: in upvalue 'yourAssert'
-	loon/init.lua:507: in function 'loon.snap.output'
-	tests/junit-output.lua:57: in function <tests/junit-output.lua:24>
+	loon/snap.lua:103: in upvalue 'yourAssert'
+	loon/init.lua:529: in function 'loon.snap.output'
+	tests/junit-output.lua:66: in function <tests/junit-output.lua:33>
 	[C]: in function 'xpcall'
-	loon/init.lua:169: in function <loon/init.lua:153>
+	loon/init.lua:173: in function <loon/init.lua:154>
 	(...tail calls...)
-	loon/init.lua:536: in function 'loon.run'
-	tests/junit-output.lua:246: in main chunk
+	loon/init.lua:558: in function 'loon.run'
+	tests/[[path normalized for test]]
 	[C]: in ?]]>
       </error>
     </testcase>

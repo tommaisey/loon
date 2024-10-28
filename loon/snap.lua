@@ -48,22 +48,29 @@ end
 -- The stateful part of the library, so be careful!
 local testNames = {}
 local runUpdate -- filled in later
-local dir
+--local dir
 local pass, fail, new, kind, ordered = {}, {}, {}, {}, {}
 local function reset()
     pass, fail, new, kind, ordered = {}, {}, {}, {}, {}
 end
 
 --------------------------------------------------------------------------------------
-local function compareVsFile(name, actual)
-    if testNames[name] then
+local function compareVsFile(name, actual, transformer)
+    local dir = assert(loon.plugin.getConfig(), 'no snapshot directory set')
+    local qualifiedName = dir .. ' ' .. name
+
+    if testNames[qualifiedName] then
         writef('%s: duplicate snapshot name!\nonly one of these will run: \'%s\'', color.warn('warning'), name)
         return
     end
 
-    testNames[name] = true
-    local path = assert(dir, 'no snapshot directory set') .. name .. '.snap'
+    testNames[qualifiedName] = true
+    local path = dir .. name .. '.snap'
     local file = io.open(path, 'r')
+
+    if transformer then
+        actual = transformer(actual)
+    end
 
     if file == nil then
         kind[name] = 'new'
@@ -88,7 +95,7 @@ local function compareVsFile(name, actual)
     end
 end
 
-local function compareVsOutput(name, testFn)
+local function compareVsOutput(name, testFn, transformer)
     local path = os.tmpname()
     local output = assert(io.open(path, 'w+'), "test runner couldn't open temporary file")
     io.output(output)
@@ -102,10 +109,10 @@ local function compareVsOutput(name, testFn)
     output:close()
     os.remove(path)
 
-    return compareVsFile(name, actual)
+    return compareVsFile(name, actual, transformer)
 end
 
-local function failMsg(srcLocation, name, actual)
+local function failMsg(srcLocation, pluginConfig, name, actual)
     if kind[name] == 'new' then
         return srcLocation .. fmt('new test: \'%s\'', name)
     end
@@ -113,7 +120,7 @@ local function failMsg(srcLocation, name, actual)
         assert(ordered[#ordered].name == name)
         actual = ordered[#ordered].actual
     end
-    local path = assert(dir, 'no snapshot directory set') .. name .. '.snap'
+    local path = assert(pluginConfig, 'no snapshot directory set') .. name .. '.snap'
     return srcLocation .. '\n' .. diff(actual, path)
 end
 
@@ -121,10 +128,17 @@ end
 -- The public part of the library
 
 -- The function used to do a snapshot assertion inside a loon test.
--- It takes (name, result), where the result is the output your code
+-- It takes (name, result, [transformer]), where the result is the output your code
 -- makes today. The result will be compared against a file in the
 -- configured directory (see `config()`) with the filename `name`.
--- This means that
+--
+-- If you supply a 'transformer' function, the result will be run
+-- through it before the comparison. You can use this to edit the
+-- result before it is compared. You might do this to allow the
+-- test to be run in multiple contexts - for example, if you
+-- expect the output to contain a file path, you can replace
+-- it with a common string so that the test doesn't depend
+-- on the exact location of the file on your system.
 export.compare = loon.assert.create(compareVsFile, failMsg)
 
 -- Like `compare()`, except it captures anything written to `io.output()`
@@ -141,7 +155,7 @@ function export.config(configOrArgs, configDefaults)
     assert(config.dir, 'you failed to configure the output directory.\n'
         .. 'pass the --dir argument at the terminal, or "dir" element in the config.')
 
-    dir = config.dir:gsub('[\\/]$', '') .. '/'
+    loon.plugin.config(config.dir:gsub('[\\/]$', '') .. '/')
 
     loon.plugin.summary('snapshot: print new tests', function()
         if #new > 0 then

@@ -76,7 +76,7 @@ local function clone(tbl)
     return cloned
 end
 
-local function defaultFailMsg(srcLocation, ...)
+local function defaultFailMsg(srcLocation, _pluginConfig, ...)
     if select(..., '#') == 0 then
         return fmt('%s: assertion failed (no arguments)', srcLocation)
     end
@@ -87,7 +87,7 @@ local function defaultFailMsg(srcLocation, ...)
     return fmt('%s: assertion failed with arguments: %s', srcLocation, table.concat(arguments, ', '))
 end
 
-local function equalsFailMsg(srcLocation, got, expected, text)
+local function equalsFailMsg(srcLocation, _pluginConfig, got, expected, text)
     local message = text and fmt("%s\n", color.msg(text)) or ''
     local comparison
     expected = color.value(stringify(expected))
@@ -135,6 +135,7 @@ local suiteNow = suiteDefault
 local suiteStack = {suiteNow}
 local pluginSummaries = {}
 local pluginSummariesOrdered = {}
+local pluginConfig
 
 local function reset()
     tests = {}
@@ -144,6 +145,7 @@ local function reset()
     suiteStack = {suiteNow}
     pluginSummaries = {}
     pluginSummariesOrdered = {}
+    pluginConfig = nil
 end
 
 --------------------------------------------------------------------------------------
@@ -164,11 +166,16 @@ local function runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
 
     for _, info in ipairs(tests) do
         asserts.successes, asserts.failed = 0, {}
-        local name, fn, suite = info[1], info[2], info[3]
+        local name, fn, suite, config = info[1], info[2], info[3], info[4]
+
+        pluginConfig = config -- may be retrieved by plugins
+
         local noError, errorObj = xpcall(fn, function(errorMsg)
             local norm = normalizeRelativePath
             return {msg = norm(errorMsg), trace = norm(debug.traceback(nil, 8))}
         end)
+
+        pluginConfig = nil
 
         if suite ~= currentSuite then
             if #suite <= #currentSuite and suite ~= suiteDefault then
@@ -410,7 +417,7 @@ end
 -- assertion from Loon's assert sub-modules. After adding
 -- some tests, you must call `run()` to run the tests.
 function export.add(testName, testFunction)
-    insert(tests, {testName, testFunction, suiteNow})
+    insert(tests, {testName, testFunction, suiteNow, pluginConfig})
 end
 
 -- Begin a suite of tests. After this you should add some tests,
@@ -440,13 +447,22 @@ function export.suite.add(name, functionContainingTests)
     export.suite.stop()
 end
 
--- Run a file of tests as a suite.
--- This allows you to run a collection of files,
--- each in their own suite.
-function export.suite.file(requirePath)
-    export.suite.start(requirePath)
-    require(requirePath)
-    export.suite.stop()
+-- Collect all the tests in a series of test files.
+-- The tests will not be run, even if the files contain
+-- a call to `run()`, so you must call it yourself after
+-- calling this. This allows you to run files individually
+-- or in groups simply by loading a specific file or file
+-- containing a call to `collect()`.
+function export.grouped(...)
+    local run = export.run
+    export.run = function() end
+
+    for _, requireStyleString in ipairs({...}) do
+        local file = package.searchpath(requireStyleString, package.path)
+        assert(loadfile(file))()
+    end
+
+    export.run = run
 end
 
 -- Allows plugins (such as the snapshot testing plugin) to register
@@ -470,14 +486,28 @@ function export.plugin.summary(name, func)
     insert(pluginSummariesOrdered, func)
 end
 
+-- Allows a plugin to set a temporary configuration which is saved
+-- alongside every test. This can then be retrieved when running
+-- the test with `getConfig()`, so that the plugin can adjust its
+-- behaviour according to the config that was set for that region
+-- of code.
+function export.plugin.config(data)
+    pluginConfig = data
+end
+
+function export.plugin.getConfig()
+    return pluginConfig
+end
+
 --------------------------------------------------------------------------------------
 -- Allows you to create an assertion function that hooks into the loon
 -- test system. The returned function will have the same arguments as
 -- `yourAssert` (which should return `true`/`false`) and can be used
 -- as an assertion in tests. You may also supply a function that creates
 -- string describing failure. This should take a string describing the
--- source location of the failed assertion, followed by the same arguments
--- supplied to `yourAssert`.
+-- source location of the failed assertion, then a plugin config object
+-- which will be anything set by `plugin.config()` (or `nil`), followed
+-- by the same arguments supplied to `yourAssert`.
 --
 -- This is of course very useful for plugins, such as the snapshot plugin.
 --
@@ -486,7 +516,7 @@ end
 --     return a:lower() == b:lower()
 -- end
 --
--- local function stringsNotEqualFailMsg(srcLocation, a, b)
+-- local function stringsNotEqualFailMsg(srcLocation, pluginConfig, a, b)
 --     return string.format("%s: strings don't match: '%s' vs. '%s'", srcLocation, a, b)
 -- end
 --
@@ -504,7 +534,7 @@ function export.assert.create(yourAssert, failMsgFn)
             local file = color.file(normalizeRelativePath(info.short_src))
             local line = color.line(lineinfo.currentline)
             local location = fmt('%s:%s: ', file, line)
-            insert(asserts.failed, failMsgFn(location, ...))
+            insert(asserts.failed, failMsgFn(location, pluginConfig, ...))
         end
     end
 end

@@ -1,7 +1,7 @@
 default suite
 + jabberwock [1 pass]
 x slithy [1 fail, 0 pass]
-  (1) tests/terminal-output.lua:138: expected: 5, got: 3
+  (1) tests/terminal-output.lua:147: expected: 5, got: 3
 
 + mimsy [1 pass]
 --------------------------

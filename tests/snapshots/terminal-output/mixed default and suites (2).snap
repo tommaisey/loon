@@ -4,7 +4,7 @@
 [32m+[0m brillig [[32m2[0m pass]
 [34msuite 2[0m
 [31mx[0m slithy [[31m1[0m fail, [32m0[0m pass]
-  ([31m1[0m) [36mtests/terminal-output.lua[0m:[36m233[0m: expected: [35m5[0m, got: [31m3[0m
+  ([31m1[0m) [36mtests/terminal-output.lua[0m:[36m242[0m: expected: [35m5[0m, got: [31m3[0m
 
 [34mdefault suite[0m
 [32m+[0m mimsy [[32m1[0m pass]
