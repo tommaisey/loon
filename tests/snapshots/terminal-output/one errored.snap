@@ -2,13 +2,13 @@
 [31mx[0m jabberwock
   ([31mERROR[0m) [36mtests/terminal-output.lua[0m:[36m57[0m: I did a boo-boo
     stack traceback:
-  	./loon/snap.lua:96: in upvalue 'yourAssert'
-  	./loon/init.lua:494: in function 'loon.snap.output'
+  	loon/snap.lua:96: in upvalue 'yourAssert'
+  	loon/init.lua:507: in function 'loon.snap.output'
   	tests/terminal-output.lua:55: in function <tests/terminal-output.lua:22>
   	[C]: in function 'xpcall'
-  	./loon/init.lua:164: in function <./loon/init.lua:148>
+  	loon/init.lua:169: in function <loon/init.lua:153>
   	(...tail calls...)
-  	./loon/init.lua:521: in function 'loon.run'
+  	loon/init.lua:536: in function 'loon.run'
   	tests/terminal-output.lua:294: in main chunk
   	[C]: in ?
 --------------------------

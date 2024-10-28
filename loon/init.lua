@@ -59,6 +59,10 @@ local function stringify(x)
     return tostring(x)
 end
 
+local function normalizeRelativePath(str)
+    return str:gsub('%./', '')
+end
+
 -- Always indent by 2 spaces, don't indent initial line
 local function indent(text)
     return text:gsub('\n', '\n  ')
@@ -162,7 +166,8 @@ local function runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
         asserts.successes, asserts.failed = 0, {}
         local name, fn, suite = info[1], info[2], info[3]
         local noError, errorObj = xpcall(fn, function(errorMsg)
-            return {msg = errorMsg, trace = debug.traceback(nil, 8)}
+            local norm = normalizeRelativePath
+            return {msg = norm(errorMsg), trace = norm(debug.traceback(nil, 8))}
         end)
 
         if suite ~= currentSuite then
@@ -496,7 +501,9 @@ function export.assert.create(yourAssert, failMsgFn)
         else
             local info = debug.getinfo(2, "S")
             local lineinfo = debug.getinfo(2, "l")
-            local location = fmt('%s:%s: ', color.file(info.short_src), color.line(lineinfo.currentline))
+            local file = color.file(normalizeRelativePath(info.short_src))
+            local line = color.line(lineinfo.currentline)
+            local location = fmt('%s:%s: ', file, line)
             insert(asserts.failed, failMsgFn(location, ...))
         end
     end
