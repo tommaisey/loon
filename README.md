@@ -124,7 +124,7 @@ to run the `my-tests/file-name.lua` tests.
 You can then run tests on an individual file basis or all together, simply by running
 the files in the normal way. `loon` is smart, and if tests are run via `test.grouped()`,
 all the tests will be collected and then run as one collection. It's therefore a good
-idea to make sure each file begins with a suite directive, so you can see in the output
+idea to make sure each file begins with a suite directive, so that the output indicates
 which tests belong to which file.
 
 An example follows below. The commands it allows you to run look like this:
@@ -144,6 +144,7 @@ And here are the files in the `my-tests` directory which allow this:
 local test = require('loon')
 
 test.suite.start('first suite')
+
 test.add('test one', function()
     test.assert.eq(1 + 1, 2, 'must be in a euclidean universe')
 end)
@@ -153,7 +154,8 @@ test.run(arg)
 -- my-tests/second-file.lua
 local test = require('loon')
 
-test.suite.start('first suite')
+test.suite.start('second suite')
+
 test.add('test two', function()
     test.assert.eq(2 + 2, 4, '2 + 2 must equal 4')
 end)
@@ -173,16 +175,18 @@ test.run(arg)
 
 ## snapshot tests
 
-The 'main' `loon` module allows you to write unit tests, but another useful paradigm
-is called 'snapshot' testing. This means that you write some code that should produce
-an output, and then you compare it against a validated output that you have committed
-into your repository. These tests ensure that changes you make don't change any output
-that users of your code may rely on.
+The main `loon` module allows you to write unit tests, but another useful paradigm
+is 'snapshot' testing. This means that you write some code that should produce an
+output, and then you compare it against a validated output that you have committed
+into your repository. This ensures that output produced by a given input stays the
+same. It's helpful when your code produces complex and potentially varied output,
+because it automates the process of creating and comparing validated results.
 
-`loon` includes a built-in facility for these kinds of tests which are written as a
-'plugin' to `loon` (more on plugins later). We use these tests extensively to test
-`loon` itself. To use it, you must include the `loon.snap` module, which includes
-assertion functions that check against snapshots.
+`loon` includes a built-in facility for snapshot tests which are written as a
+'plugin' (more on plugins later). We use these tests extensively to test `loon`
+itself. To use it, you must include the `loon.snap` module, which includes
+special assertion functions to compare snapshots and/or create them (if you
+supply the `--update` flag).
 
 ```lua
 local myCode = require('code-i-want-to-test')
@@ -192,23 +196,23 @@ local snapshot = require('loon.snap')
 -- configure the snapshot tester.
 -- you MUST provide the directory where the snapshots are stored.
 -- you could do this via a command line argument e.g. '--dir my-tests/snapshots'.
--- but it's often convenient to provide this in the code by defaults.
+-- but it's often convenient to provide it in the code by default.
 snapshot.config(arg, {dir = "my-tests/snapshots"})
 
 test.suite.start('my snapshot tests')
 
 test.add('my first snapshot test', function()
-    -- compares the value returned by your function to the stored file contents
+    -- compares the stored file contents to the value returned by your function
     snapshot.compare('name that must be unique', myCode.thatReturnsOutput())
 end)
 
 test.add('my second snapshot test', function()
-    -- compares whatever is written to to io.output() by the function you supply
+    -- compares the stored file contents to whatever your function writes to io.output()
     snapshot.output(a name that describes the test', function()
-        io.output():write('this will be tested')
-        io:write('io.write("x") is equivalent to io.output():write("x")')
-        print('this writes to the same output, so is tested as well')
-        myCode.thatWritesToIoOutput() -- custom code writing to the default output
+        io.output():write('this will be in the snapshots')
+        io:write('so will this: io.write("x") is equivalent to io.output():write("x")')
+        print('so will this: print() also uses io.output()')
+        myCode.thatWritesToIoOutput() -- so will this, if it calls any of the above
     end)
 end)
 
@@ -219,28 +223,29 @@ As you can see, this looks similar to a normal `loon` test file, but it includes
 the `loon.snap` module, configures it, and then uses the assertions that it provides
 in the tests.
 
-The `compare` assertion uses the data that you pass to it as an argument.
+The `compare()` assertion uses the data that you pass to it as an argument.
 
-The `output` assertion captures anything that is written to Lua's default output
+The `output()` assertion captures anything that is written to Lua's default output
 stream `io.output()` and compares it with the file. This means that it captures
 anything written with `print()` or explicitly with `io.output():write(x)` or
 `io:write(x)`. This is very useful for testing command-line output.
 
-You must ensure that every snapshot assertion that points at the same directory
-has a unique name, and that it's a valid file name on the systems you will test
-on, because the snapshots are saved into files with these names. It's usually
-a good idea to configure the snapshots for each test file into a different
-directory so that you don't have to worry about cross-file name conflicts.
+Snapshots are saved using the format `[directory specified by --dir]/[name given to assertion].snap`.
+This means that the name given to `compare()` or `output()` must be unique for
+a given configuration. You can re-configure the the directory whenever you want,
+but usually you'll do it at the top of a file. This means that the names must
+only be unique within that file. You'll be warned if a duplicate directory/name
+combination is used twice.
 
 ``` lua
 -- my-tests/file-one.lua
 local test = require('loon')
 local snapshot = require('loon.snap')
-
 snapshot.config(arg, {dir = "my-tests/snapshots/file-one"})
+
 test.suite.start('file one snapshots')
 
-test.add('file one, first test', function()
+test.add('first test', function()
     snapshot.compare('must be unique in this file', myCode.thatReturnsOutput())
 end)
 
@@ -249,11 +254,11 @@ test.run(arg)
 -- my-tests/file-two.lua
 local test = require('loon')
 local snapshot = require('loon.snap')
-
 snapshot.config(arg, {dir = "my-tests/snapshots/file-two"})
-test.suite.start('file one snapshots')
 
-test.add('file two, first test', function()
+test.suite.start('file two snapshots')
+
+test.add('first test', function()
     -- it's ok that this has the same name, because it has its own snapshot directory
     snapshot.compare('must be unique in this file', myCode.thatReturnsOutput())
 end)
@@ -261,32 +266,25 @@ end)
 test.run(arg)
 ```
 
-When you first write your snapshot tests, none of the snapshots will yet exist, so
-all of the tests will fail. There's an easy way to create the snapshots, and also
-to update them when the outputs have changed in a way that you expect and are
-happy with. Just supply the `--update` flag at the command line.
+When you first run your snapshot tests, none of the snapshots will exist yet, so
+all of the tests will fail. There's an easy way to create the snapshots: just supply
+the `--update` flag. This is also used to update snapshots when the outputs have
+changed in a way that you expect and are happy with.
 
 ```sh
 $ mkdir -p my-tests/snapshots/file-one # make the directory first!
 $ lua my-tests/file-one.lua --update # create/update the snapshots
 ```
 
-This command will run the tests, tell you how many failed tests and new tests
-there are, and ask you if you want to proceed with updating them. If you
+This command will run the tests, tell you how many new and failed tests
+there are, and ask if you want to proceed with updating them. If you
 answer `Y [enter]`, then you will be shown the diff of each test in turn
 and asked if you're happy with the new results. If you answer `Y [enter]`,
 then that snapshot will be stored and you'll move onto the next change.
 
-If you're unhappy with any changes, you can go back and make changes to
-your code until you are. Once you've accepted all the changes, the tests
-will pass, and you should commit the new snapshots to your repository.
-
-Overall snapshot tests can be really useful for ensuring your program's
-output doesn't change at a high level, especially when the output is
-too complex to write by hand as a unit test comparison. This is why
-we use it to test `loon` itself - we want to ensure that output to
-the terminal (and other formats) doesn't change without us knowing
-about it!
+If you're unhappy with any changes, select `N` and you can go back and
+edit your code until you are. Once you've accepted all the changes, the
+tests will pass, and you should commit the new snapshots to your repository.
 
 ## plugins
 
