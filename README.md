@@ -316,7 +316,7 @@ end
 
 local function ignoringCaseFailMsg(srcLocation, a, b)
     if type(a) ~= type(b) or type(a) ~= 'string' then
-        return string.format('expected two strings, got: "%s" and "%s"', type(a), type(b))
+        return string.format('%s: expected two strings, got: "%s" and "%s"', srcLocation, type(a), type(b))
     end
 
     return string.format('%s: strings not equal (ignoring case): "%s" vs. "%s"', srcLocation, a, b,)
@@ -331,9 +331,9 @@ return {
 
 ### custom reporting and arguments
 
-Sometimes you need to make a more full-featured setup, which needs
-configuration and may include custom summary reports. Note that the
-APIs shown here are not guaranteed to be stable since `loon` isn't yet
+Sometimes you need to make a more full-featured plugin, which needs
+configuration and may include custom summaries. Note that the APIs
+shown here are not guaranteed to be stable since `loon` isn't yet
 fully mature.
 
 You might also find it useful to read the source of `loon/snap.lua`
@@ -353,7 +353,7 @@ local function myAssertion(a, b)
     -- The reason it's accessed this way is so that your plugin can be configured
     -- multiple different times (e.g. in different files) without getting conflicted.
     -- This data will always represent the configured data as it was at the time
-    -- when the test this assertion live in was defined. It's a bit roundabout,
+    -- when the test containing this assertion was defined. It's a bit roundabout,
     -- but we've found it useful (necessary, actually) in the snapshot plugin.
     local customData = assert(loon.plugin.getCustomData())
     return a == b and a ~= customData
@@ -372,8 +372,7 @@ local function myFailMsg(srcLocation, a, b)
     )
 end
 
--- This becomes a function with the same signature as `myAssertion()`.
--- Consumers of the plugin can use it inside tests to
+-- The custom assertion provided by this plugin.
 myModule.assertion = loon.assert.create(myAssertion, myFailMsg)
 
 function myModule.config(configOrArgs, configDefaults)
@@ -421,15 +420,4 @@ function myModule.config(configOrArgs, configDefaults)
 end
 
 return myModule
-```
-
-## config
-
-When you run your tests, you can supply a config table of options, which are all optional.
-
-```lua
-tests.run({
-    uncolored = true, -- don't output color in the terminal
-    terse = true,     -- don't output succesful test titles
-})
 ```
