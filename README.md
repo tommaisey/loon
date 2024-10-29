@@ -35,7 +35,7 @@ To run the tests, you simply call the file in the usual way with Lua's interpret
 This will print the results of the tests to the terminal, nicely colorized.
 
 ```sh
-$ lua tests.lua
+$ lua tests/my-tests.lua
 ```
 
 If you want to control the output more, you can do that one of two ways.
