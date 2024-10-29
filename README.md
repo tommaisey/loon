@@ -289,19 +289,58 @@ tests will pass, and you should commit the new snapshots to your repository.
 ## plugins
 
 `loon` is written to be extensible, so that you can create custom test
-runners with extra behavior, which hook seamlessly into the test system
-you use for your other tests. The `loon.snap` module itself is written
-as such a plugin, which was the main motivation for it, but if you have
-some interesting use-case you might want to try this yourself.
+runners with extra behavior. These can run seamlessly alongside the
+other tests in your suites, and benefit from unified formatting and
+error reporting.
 
-However, take note! Loon isn't yet fully mature, and the plugin API is
-not guaranteed to be stable as a result. We also don't have detailed
-documentation for it, but you can read the below example plugin if
-you want to give it a go. You might also find it useful to read the
-source of `loon/snap.lua` for another example, and `loon/init.lua`
-if you want to see how the guts work.
+The `loon.snap` module itself is written as such a plugin, and is the
+main motivation for the plugin system, but if you have some
+interesting use-case you might want to try it yourself.
 
-So here's a simple plugin example using the API at time of writing.
+### custom assertions
+
+The easiest way to customize `loon` is to make your own assertion
+functions. These can run inside any normal loon test and have
+custom error messages.
+
+```lua
+local loon = require('loon')
+
+local function equalIgnoringCase(a, b)
+    if type(a) ~= type(b) or type(a) ~= 'string' then
+        return false
+    end
+
+    return a:lower() == b:lower()
+end
+
+local function ignoringCaseFailMsg(srcLocation, a, b)
+    if type(a) ~= type(b) or type(a) ~= 'string' then
+        return string.format('expected two strings, got: "%s" and "%s"', type(a), type(b))
+    end
+
+    return string.format('%s: strings not equal (ignoring case): "%s" vs. "%s"', srcLocation, a, b,)
+end
+
+-- We'll return a module so this can be required from your test files.
+return {
+    equalIgnoringCase = loon.assert.create(equalIgnoringCase, ignoringCaseFailMsg)
+}
+
+```
+
+### custom reporting and arguments
+
+Sometimes you need to make a more full-featured setup, which needs
+configuration and may include custom summary reports. Note that the
+APIs shown here are not guaranteed to be stable since `loon` isn't yet
+fully mature.
+
+You might also find it useful to read the source of `loon/snap.lua`
+for another example, and `loon/init.lua` if you want to see how the
+guts work.
+
+Here's a simple plugin example using the API at time of writing.
 
 ```lua
 local loon = require('loon')
