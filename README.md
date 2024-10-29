@@ -22,11 +22,10 @@ Let's start with a simple example.
 
 ```lua
 local test = require('loon')
-local eq = test.assert.equals
 
 test.add('my first test', function()
-    eq(1 + 1, 2, 'must be in a euclidean universe')
-    eq(0 - 1, -1, 'must have signed mathematics')
+    test.assert.eq(1 + 1, 2, 'must have integer addition')
+    test.assert.eq(0 - 1, -1, 'must have signed integer addition')
 end)
 
 test.run()
