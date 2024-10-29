@@ -7,12 +7,12 @@
       <error message="tests/junit-output.lua:67: I did a boo-boo">
         <![CDATA[stack traceback:
 	loon/snap.lua:99: in upvalue 'yourAssert'
-	loon/init.lua:545: in function 'loon.snap.output'
+	loon/init.lua:548: in function 'loon.snap.output'
 	tests/junit-output.lua:65: in function <tests/junit-output.lua:32>
 	[C]: in function 'xpcall'
-	loon/init.lua:179: in function <loon/init.lua:160>
+	loon/init.lua:183: in function <loon/init.lua:164>
 	(...tail calls...)
-	loon/init.lua:591: in function 'loon.run'
+	loon/init.lua:594: in function 'loon.run'
 	tests/[[path normalized for test]]
 	[C]: in ?]]>
       </error>

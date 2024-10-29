@@ -135,5 +135,4 @@ test.add('user defaults', function()
 end)
 test.suite.stop('defaults')
 
-test.suite.stop('arg interpretation and validation')
 test.run(arg)

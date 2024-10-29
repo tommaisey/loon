@@ -108,7 +108,7 @@ local function compareVsOutput(name, testFn, transformer)
     return compareVsFile(name, actual, transformer)
 end
 
-local function failMsg(srcLocation, pluginConfig, name, actual)
+local function failMsg(srcLocation, name, actual)
     if kind[name] == 'new' then
         return srcLocation .. fmt('new test: \'%s\'', name)
     end
@@ -116,7 +116,8 @@ local function failMsg(srcLocation, pluginConfig, name, actual)
         assert(ordered[#ordered].name == name)
         actual = ordered[#ordered].actual
     end
-    local path = assert(pluginConfig, 'no snapshot directory set') .. name .. '.snap'
+    local dir = assert(loon.plugin.getCustomData(), 'no snapshot directory set')
+    local path = dir .. name .. '.snap'
     return srcLocation .. '\n' .. diff(actual, path)
 end
 

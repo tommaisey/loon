@@ -78,7 +78,7 @@ local function clone(tbl)
     return cloned
 end
 
-local function defaultFailMsg(srcLocation, _pluginConfig, ...)
+local function defaultFailMsg(srcLocation, ...)
     if select(..., '#') == 0 then
         return fmt('%s: assertion failed (no arguments)', srcLocation)
     end
@@ -89,7 +89,7 @@ local function defaultFailMsg(srcLocation, _pluginConfig, ...)
     return fmt('%s: assertion failed with arguments: %s', srcLocation, table.concat(arguments, ', '))
 end
 
-local function equalsFailMsg(srcLocation, _pluginConfig, got, expected, text)
+local function equalsFailMsg(srcLocation, got, expected, text)
     local message = text and fmt("%s\n", color.msg(text)) or ''
     local comparison
     expected = color.value(stringify(expected))
@@ -141,17 +141,21 @@ local pluginConfig
 local argsMerged = clone(argsBase)
 local argsMergedDefaults = clone(argsBaseDefaults)
 
+local function resetSuite()
+    suiteNow = suiteDefault
+    suiteStack = {suiteNow}
+    suitePathStack = {}
+end
+
 local function reset()
     tests = {}
     asserts = {successes = 0, failed = {}}
-    suitePathStack = {}
-    suiteNow = suiteDefault
-    suiteStack = {suiteNow}
     pluginSummaries = {}
     pluginSummariesOrdered = {}
     pluginConfig = nil
     argsMerged = clone(argsBase)
     argsMergedDefaults = clone(argsBaseDefaults)
+    resetSuite()
 end
 
 --------------------------------------------------------------------------------------
@@ -461,7 +465,7 @@ end
 -- containing a call to `collect()`.
 function export.grouped(...)
     local run = export.run
-    export.run = function() end
+    export.run = resetSuite
 
     for _, requireStyleString in ipairs({...}) do
         local file = package.searchpath(requireStyleString, package.path)
@@ -521,9 +525,8 @@ end
 -- `yourAssert` (which should return `true`/`false`) and can be used
 -- as an assertion in tests. You may also supply a function that creates
 -- string describing failure. This should take a string describing the
--- source location of the failed assertion, then a plugin config object
--- which will be anything set by `plugin.config()` (or `nil`), followed
--- by the same arguments supplied to `yourAssert`.
+-- source location of the failed assertion, followed by the same arguments
+-- supplied to `yourAssert`.
 --
 -- This is of course very useful for plugins, such as the snapshot plugin.
 --
@@ -532,7 +535,7 @@ end
 --     return a:lower() == b:lower()
 -- end
 --
--- local function stringsNotEqualFailMsg(srcLocation, pluginConfig, a, b)
+-- local function stringsNotEqualFailMsg(srcLocation, a, b)
 --     return string.format("%s: strings don't match: '%s' vs. '%s'", srcLocation, a, b)
 -- end
 --
@@ -550,7 +553,7 @@ function export.assert.create(yourAssert, failMsgFn)
             local file = color.file(normalizeRelativePath(info.short_src))
             local line = color.line(lineinfo.currentline)
             local location = fmt('%s:%s: ', file, line)
-            insert(asserts.failed, failMsgFn(location, pluginConfig, ...))
+            insert(asserts.failed, failMsgFn(location, ...))
         end
     end
 end
