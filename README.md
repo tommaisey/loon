@@ -12,7 +12,7 @@
 There are of course several other Lua test libraries, I simply wanted one with this
 set of goals and trade-offs, and couldn't find exactly what I was looking for.
 
-This library is current a work in progress.
+Beware: this library is currently a work in progress. Please post any issues you discover.
 
 # examples
 
