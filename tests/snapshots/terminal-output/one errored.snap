@@ -8,7 +8,7 @@
   	[C]: in function 'xpcall'
   	loon/init.lua:179: in function <loon/init.lua:160>
   	(...tail calls...)
-  	loon/init.lua:585: in function 'loon.run'
+  	loon/init.lua:591: in function 'loon.run'
   	tests/[[path normalized for test]]
   	[C]: in ?
 --------------------------

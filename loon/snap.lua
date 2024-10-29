@@ -146,7 +146,13 @@ export.output = loon.assert.create(compareVsOutput, failMsg)
 -- snapshot tests, and it must configure the snapshot directory that
 -- will be used.
 function export.config(configOrArgs, configDefaults)
-    local config = args.verify(configOrArgs, argsBase, argsBaseDefaults, configDefaults, 'ignoreUnrecognised')
+    local config = args.verify({
+        config = configOrArgs,
+        spec = argsBase,
+        defaults = argsBaseDefaults,
+        userDefaults = configDefaults,
+        ignoreUnrecognized = true
+    })
 
     assert(config.dir, 'you failed to configure the output directory.\n'
         .. 'pass the --dir argument at the terminal, or "dir" element in the config.')

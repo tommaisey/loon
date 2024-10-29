@@ -162,8 +162,13 @@ local function applyDefaults(config, defaults)
 end
 
 ---------------------------------------------------------------------------
-function export.verify(config, spec, defaults, userDefaults, ignoreUnrecognized)
-    assert(spec, 'args spec is required')
+function export.verify(def)
+    local spec = assert(def.spec, 'args.verify() requires a "spec" element')
+    local config = def.config
+    local defaults = def.defaults
+    local userDefaults = def.userDefaults
+    local ignoreUnrecognized = def.ignoreUnrecognized
+
     config = convertIfArgs(config, spec, ignoreUnrecognized)
 
     -- Apply user defaults first, to override system defaults

@@ -5,7 +5,12 @@ local eq = test.assert.equals
 local function verify(array, spec, defaults, userDefaults)
     array[-1] = 'lua'
     array[0] = 'my-script-name.lua'
-    return args.verify(array, spec, defaults, userDefaults)
+    return args.verify({
+        config = array,
+        spec = spec,
+        defaults = defaults,
+        userDefaults = userDefaults
+    })
 end
 
 -----------------------------------------------------------------

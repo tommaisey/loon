@@ -564,8 +564,14 @@ export.assert.eq = export.assert.equals -- alias
 --------------------------------------------------------------------------------------
 -- Runs the tests, outputting the results in one of several ways,
 -- depending on the configuration table.
-function export.run(config, configDefaults)
-    config = args.verify(config, argsMerged, argsMergedDefaults, configDefaults)
+function export.run(configOrArgs, configDefaults)
+    local config = args.verify({
+        config = configOrArgs,
+        spec = argsMerged,
+        defaults = argsMergedDefaults,
+        userDefaults = configDefaults,
+        ignoreUnrecognised = false
+    })
 
     if config.help then
         writef('A Lua test suite written with Loon.\n')
