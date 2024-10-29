@@ -2,7 +2,8 @@
 -- A lighweight testing library.
 local export = {
     assert = {
-        error = {}
+        error = {},
+        string = {}
     },
     suite = {},
     plugin = {}
@@ -80,6 +81,9 @@ local function clone(tbl)
     return cloned
 end
 
+-----------------------------------------------------------------------------
+-- Assertion inner functions.
+-- These are built into exported function using `loon.assert.create()` further down.
 local function defaultFailMsg(srcLocation, ...)
     if select(..., '#') == 0 then
         return fmt('%s: assertion failed (no arguments)', srcLocation)
@@ -89,50 +93,6 @@ local function defaultFailMsg(srcLocation, ...)
     for i, a in ipairs(arguments) do arguments[i] = fmt('%q', a) end
 
     return fmt('%s: assertion failed with arguments: %s', srcLocation, table.concat(arguments, ', '))
-end
-
-local function equalsFailMsg(srcLocation, got, expected, text)
-    local preamble = text and fmt("%s\n", color.msg(text)) or ''
-    local comparison
-    expected = color.value(stringify(expected))
-    got = color.fail(stringify(got))
-
-    if expected:find('\n') or got:find('\n') then
-        comparison = fmt('\nexpected: %s, got: %s', expected, got)
-    elseif #expected + #got < 48 then
-        comparison = fmt('expected: %s, got: %s', expected, got)
-    else
-        comparison = fmt('expected: \n%s.\ngot: \n%s', expected, got)
-    end
-
-    return preamble .. srcLocation .. comparison
-end
-
-local function nearlyEqualsFailMsg(srcLocation, got, expected, tolerance, text)
-    local preamble = text and fmt("%s\n", color.msg(text)) or ''
-    local outby = color.fail(stringify(math.abs(expected - got)))
-    expected = color.value(stringify(expected))
-    got = color.fail(stringify(got))
-    tolerance = color.warn(stringify(tolerance or 1e-10))
-
-    local comparison = fmt('expected: %s to be nearly %s (tolerance of %s, out by %s)', got, expected, tolerance, outby)
-
-    return preamble .. srcLocation .. comparison
-end
-
-local function errorFailMsg(srcLocation, expectedError, errorFunction)
-    local _, message = pcall(errorFunction)
-
-    return equalsFailMsg(srcLocation, message, expectedError, 'error not thrown as expected')
-end
-
-local function errorContains(errorMessage, errorFunction)
-    local success, message = pcall(errorFunction)
-    return not success and type(message) == 'string' and message:find(errorMessage)
-end
-
-local function nearlyEquals(a, b, tolerance)
-    return math.abs(a - b) <= (tolerance or 1e-10)
 end
 
 local function deepEquals(a, b)
@@ -153,6 +113,88 @@ local function deepEquals(a, b)
 
     return a == b
 end
+
+local function equalsFailMsg(srcLocation, got, expected, text)
+    local preamble = text and fmt("%s\n", color.msg(text)) or ''
+    local comparison
+    expected = color.value(stringify(expected))
+    got = color.fail(stringify(got))
+
+    if expected:find('\n') or got:find('\n') then
+        comparison = fmt('\nexpected: %s, got: %s', expected, got)
+    elseif #expected + #got < 48 then
+        comparison = fmt('expected: %s, got: %s', expected, got)
+    else
+        comparison = fmt('expected: \n%s.\ngot: \n%s', expected, got)
+    end
+
+    return preamble .. srcLocation .. comparison
+end
+
+local function nearlyEquals(a, b, tolerance)
+    return math.abs(a - b) <= (tolerance or 1e-10)
+end
+
+local function nearlyEqualsFailMsg(srcLocation, got, expected, tolerance, text)
+    local preamble = text and fmt("%s\n", color.msg(text)) or ''
+    local outby = color.fail(stringify(math.abs(expected - got)))
+    expected = color.value(stringify(expected))
+    got = color.fail(stringify(got))
+    tolerance = color.warn(stringify(tolerance or 1e-10))
+
+    local comparison = fmt('expected: %s to be nearly %s (tolerance of %s, out by %s)', got, expected, tolerance, outby)
+
+    return preamble .. srcLocation .. comparison
+end
+
+local function errorContains(errorMessage, errorFunction)
+    local success, message = pcall(errorFunction)
+    return not success and type(message) == 'string' and message:find(errorMessage)
+end
+
+local function errorFailMsg(srcLocation, expectedError, errorFunction)
+    local _, message = pcall(errorFunction)
+
+    return equalsFailMsg(srcLocation, message, expectedError, 'error not thrown as expected')
+end
+
+local function stringContains(got, expected)
+    if type(expected) ~= type(got) or type(got) ~= 'string' then
+        return false
+    end
+
+    return got:find(expected)
+end
+
+local function stringContainsFailMsg(srcLocation, got, expected)
+    if type(expected) ~= type(got) or type(got) ~= 'string' then
+        return srcLocation .. fmt('unable to do string assertion with: %q and %q.', expected, got)
+    end
+
+    return equalsFailMsg(srcLocation, got, expected, 'string does not contain expected')
+end
+
+local function makeTruthTest(expectedStr)
+    return function (srcLocation, got, text)
+        local preamble = text and fmt("%s\n", color.msg(text)) or ''
+        local expected = color.value(stringify(expectedStr))
+        got = color.fail(stringify(got))
+
+        return preamble .. srcLocation .. fmt('expected: %s. got: %s', expected, got)
+    end
+end
+
+local truthyFailMsg = makeTruthTest('not nil|false')
+local trueFailMsg = makeTruthTest('true')
+local falseyFailMsg = makeTruthTest('nil|false')
+local falseFailMsg = makeTruthTest('false')
+local nilFailMsg = makeTruthTest('nil')
+
+local function trueTest(got) return got == true end
+local function truthyTest(got) return got end
+local function falseyTest(got) return not got end
+local function falseTest(got) return got == false end
+local function nilTest(got) return got == nil end
 
 --------------------------------------------------------------------------------------
 -- The stateful part of the library, so be careful!
@@ -592,12 +634,28 @@ end
 export.assert.equals = export.assert.create(deepEquals, equalsFailMsg)
 export.assert.eq = export.assert.equals -- alias
 
--- A numeric comparison with tolerance.
+-- Checks for `true`, `false`, `nil`, and 'truthy' (i.e. not `nil` or `false`).
+-- Takes (got, [message]).
+export.assert.truthy = export.assert.create(truthyTest, truthyFailMsg)
+export.assert.isTrue = export.assert.create(trueTest, trueFailMsg)
+export.assert.is_true = export.assert.create(trueTest, trueFailMsg)
+export.assert.falsey = export.assert.create(falseyTest, falseyFailMsg)
+export.assert.isFalse = export.assert.create(falseTest, falseFailMsg)
+export.assert.is_false = export.assert.create(falseTest, falseFailMsg)
+export.assert.isNil = export.assert.create(nilTest, nilFailMsg)
+export.assert.is_nil = export.assert.create(nilTest, nilFailMsg)
+
+-- Numeric comparison with tolerance.
 -- Takes (got, expected, [tolerance, [message]]).
 export.assert.near = export.assert.create(nearlyEquals, nearlyEqualsFailMsg)
 export.assert.nearly = export.assert.create(nearlyEquals, nearlyEqualsFailMsg)
 
--- A check that an error is thrown, and its message contains a certain string.
+-- Checks that the received string contains the other.
+-- The 'stringItMustContain' may be a pattern.
+-- Takes (got, stringItMustContain).
+export.assert.string.contains = export.assert.create(stringContains, stringContainsFailMsg)
+
+-- Checks that an error is thrown, and its message contains a certain string.
 -- Takes (expectedMessage, functionToThrowError).
 export.assert.error.contains = export.assert.create(errorContains, errorFailMsg)
 

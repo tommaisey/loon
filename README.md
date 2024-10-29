@@ -85,6 +85,20 @@ test.add('assertion types', function()
     -- equals does deep-comparison of tables:
     test.assert.eq({a = 1, b = {c = 2}}, {a = 1, b = {c = 9}}, 'this will fail')
 
+    -- check for `true`, `false`, `nil`, and 'truthy' (meaning not `nil` or `false`
+    -- since we can't use the keywords we prefix with 'is', and provide aliases
+    -- for snake_case and camelCase aficionados.
+    test.assert.truthy('yep', 'optional message')
+    test.assert.is_true(true, 'optional message')
+    test.assert.isTrue(true, 'optional message')
+
+    test.assert.falsey(nil, 'optional message') -- also ok if it's `false`
+    test.assert.is_false(false, 'optional message')
+    test.assert.isFalse(false, 'optional message')
+
+    test.assert.is_nil(nil, 'optional message')
+    test.assert.isNil(nil, 'optional message')
+
     -- checks that a number is close to another number (within a tolerance factor)
     test.assert.near(5.1, 5, 0.2, 'optional message')
     test.assert.nearly(5.1, 5, 0.2, 'alias for near')

@@ -190,6 +190,16 @@ test.add('assertions', function()
         loon.run()
     end, normalizeStack)
 
+    snap.output('assert.string.contains', function()
+        loon.add('string.contains', function()
+            loon.assert.string.contains('To err is human, but it feels divine', 'human')
+            loon.assert.string.contains('To err is human, but it feels divine', '[Hh]uman')
+            loon.assert.string.contains('To err is human, but it feels divine', 'godly')
+        end)
+
+        loon.run()
+    end, normalizeStack)
+
     snap.output('assert.error.contains', function()
         loon.add('error.contains', function()
             loon.assert.error.contains('blammo', function()
