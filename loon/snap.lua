@@ -43,9 +43,8 @@ end
 --------------------------------------------------------------------------------------
 -- The stateful part of the library, so be careful!
 local testNames = {}
-local runUpdate -- filled in later
---local dir
 local pass, fail, new, kind, ordered = {}, {}, {}, {}, {}
+
 local function reset()
     pass, fail, new, kind, ordered = {}, {}, {}, {}, {}
 end
@@ -121,59 +120,7 @@ local function failMsg(srcLocation, name, actual)
     return srcLocation .. '\n' .. diff(actual, path)
 end
 
---------------------------------------------------------------------------------------
--- The public part of the library
-
--- The function used to do a snapshot assertion inside a loon test.
--- It takes (name, result, [transformer]), where the result is the output your code
--- makes today. The result will be compared against a file in the
--- configured directory (see `config()`) with the filename `name`.
---
--- If you supply a 'transformer' function, the result will be run
--- through it before the comparison. You can use this to edit the
--- result before it is compared. You might do this to allow the
--- test to be run in multiple contexts - for example, if you
--- expect the output to contain a file path, you can replace
--- it with a common string so that the test doesn't depend
--- on the exact location of the file on your system.
-export.compare = loon.assert.create(compareVsFile, failMsg)
-
--- Like `compare()`, except it captures anything written to `io.output()`
--- by `testFn` and uses that as the snapshot, instead of a string supplied
--- directly by you.
-export.output = loon.assert.create(compareVsOutput, failMsg)
-
--- Configure the snapshot tests. This must be done before running any
--- snapshot tests, and it must configure the snapshot directory that
--- will be used.
-function export.config(configOrArgs, configDefaults)
-    local config = args.verify({
-        config = configOrArgs,
-        spec = argsBase,
-        defaults = argsBaseDefaults,
-        userDefaults = configDefaults,
-        ignoreUnrecognized = true
-    })
-
-    assert(config.dir, 'you failed to configure the output directory.\n'
-        .. 'pass the --dir argument at the terminal, or "dir" element in the config.')
-
-    loon.plugin.config(argsBase, argsBaseDefaults, config.dir:gsub('[\\/]$', '') .. '/')
-
-    loon.plugin.summary('snapshot: print new tests', function()
-        if #new > 0 then
-            writef('%s: %s tests', color.fail('new snapshots'), color.fail(#new))
-        end
-    end)
-
-    if config.update then
-        loon.plugin.summary('snapshot: update', runUpdate)
-    end
-
-    loon.plugin.summary('snapshot: reset self', reset)
-end
-
-function runUpdate()
+local function runUpdate()
     local anyActionRequired = #fail > 0 or #new > 0
     local yes = color.pass('Y')
     local no = color.fail('N')
@@ -252,6 +199,87 @@ function runUpdate()
     end
 
     return 0
+end
+
+--------------------------------------------------------------------------------------
+-- The public part of the library
+
+-- The function used to do a snapshot assertion inside a loon test.
+-- It takes (name, result, [transformer]), where the result is the output your code
+-- makes today. The result will be compared against a file in the
+-- configured directory (see `config()`) with the filename `name`.
+--
+-- If you supply a 'transformer' function, the result will be run
+-- through it before the comparison. You can use this to edit the
+-- result before it is compared. You might do this to allow the
+-- test to be run in multiple contexts - for example, if you
+-- expect the output to contain a file path, you can replace
+-- it with a common string so that the test doesn't depend
+-- on the exact location of the file on your system.
+export.compare = loon.assert.create(compareVsFile, failMsg)
+
+-- Like `compare()`, except it captures anything written to `io.output()`
+-- by `testFn` and uses that as the snapshot, instead of a string supplied
+-- directly by you.
+export.output = loon.assert.create(compareVsOutput, failMsg)
+
+-- Configure the snapshot tests. This must be done before running any
+-- snapshot tests, and it must configure the snapshot directory that
+-- will be used.
+function export.config(configOrArgs, configDefaults)
+    local config = args.verify({
+        config = configOrArgs,
+        spec = argsBase,
+        defaults = argsBaseDefaults,
+        userDefaults = configDefaults,
+        ignoreUnrecognized = true
+    })
+
+    assert(config.dir, 'you failed to configure the output directory.\n'
+        .. 'pass the --dir argument at the terminal, or "dir" element in the config.')
+
+    loon.plugin.config(argsBase, argsBaseDefaults, config.dir:gsub('[\\/]$', '') .. '/')
+
+    loon.plugin.summary('snapshot: print new tests', function()
+        if #new > 0 then
+            writef('%s: %s tests', color.fail('new snapshots'), color.fail(#new))
+        end
+    end)
+
+    if config.update then
+        loon.plugin.summary('snapshot: update', runUpdate)
+    end
+
+    loon.plugin.summary('snapshot: reset self', reset)
+end
+
+-- Returns a function that normalizes stack traces by stripping line numbers,
+-- normalizing relative paths (which Lua sometimes prefixes with './' and
+-- sometimes doesn't, depending on context) and replacing a given list of
+-- file names (the varargs) with '[path normalized for test]'.
+--
+-- This is primarily for use in loon's own test suite, where we want to
+-- test the output of loon itself, and don't want things like line
+-- numbers or the particular top level file the tests were invoked from
+-- to affect the outcome of terminal/junit output.
+function export.normalizeStack(...)
+    local files = {...}
+
+    for i, name in ipairs(files) do
+        -- escape pattern syntax:
+        files[i] = name:gsub('([%^%$%(%)%%%.%[%]%*%+%-%?])', '%%%1')
+    end
+
+    return function(msg)
+        for _, name in ipairs(files) do
+            msg = msg:gsub(name .. ':%d+: in main chunk', '[[path normalized for test]]')
+        end
+
+        return msg
+            :gsub('(:)%d+([:>])', '%1[--]%2') -- uncolored line numbers
+            :gsub('(:[^m]+m)%d+([^m]+m[:>])', '%1[--]%2') -- colored line numbers
+            :gsub('%./', '') -- relative path normalize
+    end
 end
 
 return export

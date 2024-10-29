@@ -8,9 +8,9 @@
         <![CDATA[stack traceback:
 	loon/snap.lua:[--]: in upvalue 'yourAssert'
 	loon/init.lua:[--]: in function 'loon.snap.output'
-	tests/junit-output.lua:[--]: in function <tests/junit-output.lua:37>
+	tests/junit-output.lua:[--]: in function <tests/junit-output.lua:[--]>
 	[C]: in function 'xpcall'
-	loon/init.lua:[--]: in function <loon/init.lua:193>
+	loon/init.lua:[--]: in function <loon/init.lua:[--]>
 	(...tail calls...)
 	loon/init.lua:[--]: in function 'loon.run'
 	tests/[[path normalized for test]]

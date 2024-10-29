@@ -16,19 +16,10 @@ local eq = loon.assert.equals
 
 snap.config(arg, {dir = "tests/snapshots/terminal-output"})
 
--- Since the tests may be run from this file directly, or indirectly
--- via 'all.lua', we normalize the file path in error traces so that
--- it is the same in both contexts, and the tests will pass.
--- We also strip out line numbers from the snapshots, otherwise
--- any changes to this file's layout causes all tests to spuriously fail.
-local function normalizeStack(msg)
-    return msg
-        :gsub('terminal%-output%.lua:%d+: in main chunk', '[[path normalized for test]]')
-        :gsub('all%.lua:%d+: in main chunk', '[[path normalized for test]]')
-        :gsub('(:)%d+([:>])', '%1[--]%2') -- uncolored line numbers
-        :gsub('(:[^m]+m)%d+([^m]+m[:>])', '%1[--]%2') -- colored line numbers
-        :gsub('%./', '') -- relative path normalize
-end
+-- This prevents line numbers and/or irrelevant stack information from
+-- causing our tests to fail just because the line number or method of
+-- invocation was different.
+local normalizeStack = snap.normalizeStack('terminal-output.lua', 'all.lua')
 
 -----------------------------------------------------------------------------
 test.suite.start('terminal output')
