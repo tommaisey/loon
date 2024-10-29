@@ -19,11 +19,15 @@ snap.config(arg, {dir = "tests/snapshots/terminal-output"})
 -- Since the tests may be run from this file directly, or indirectly
 -- via 'all.lua', we normalize the file path in error traces so that
 -- it is the same in both contexts, and the tests will pass.
-local function normalizeFilePath(msg)
+-- We also strip out line numbers from the snapshots, otherwise
+-- any changes to this file's layout causes all tests to spuriously fail.
+local function normalizeStack(msg)
     return msg
         :gsub('terminal%-output%.lua:%d+: in main chunk', '[[path normalized for test]]')
         :gsub('all%.lua:%d+: in main chunk', '[[path normalized for test]]')
-        :gsub('%./', '')
+        :gsub('(:)%d+([:>])', '%1[--]%2') -- uncolored line numbers
+        :gsub('(:[^m]+m)%d+([^m]+m[:>])', '%1[--]%2') -- colored line numbers
+        :gsub('%./', '') -- relative path normalize
 end
 
 -----------------------------------------------------------------------------
@@ -36,7 +40,7 @@ test.add('basics', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('one passing - with message', function()
         loon.add('jabberwock', function()
@@ -44,7 +48,7 @@ test.add('basics', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('one failing - no message', function()
         loon.add('jabberwock', function()
@@ -52,7 +56,7 @@ test.add('basics', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('one failing - with message', function()
         loon.add('jabberwock', function()
@@ -60,7 +64,7 @@ test.add('basics', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('one errored', function()
         loon.add('jabberwock', function()
@@ -68,7 +72,7 @@ test.add('basics', function()
         end)
 
         loon.run()
-    end, normalizeFilePath)
+    end, normalizeStack)
 
     snap.output('one failing test with one assertion failing among passes', function()
         loon.add('jabberwock', function()
@@ -80,7 +84,7 @@ test.add('basics', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('two passing tests', function()
         loon.add('jabberwock', function()
@@ -91,7 +95,7 @@ test.add('basics', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('one failing test among passes', function()
         loon.add('jabberwock', function()
@@ -109,7 +113,7 @@ test.add('basics', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeStack)
 end)
 
 test.add('terse option', function()
@@ -122,7 +126,7 @@ test.add('terse option', function()
         end)
 
         loon.run({terse = true})
-    end)
+    end, normalizeStack)
 
     snap.output('terse - one failure', function()
         loon.add('jabberwock', function()
@@ -136,7 +140,7 @@ test.add('terse option', function()
         end)
 
         loon.run({terse = true})
-    end)
+    end, normalizeStack)
 end)
 
 test.add('uncolored option', function()
@@ -152,7 +156,7 @@ test.add('uncolored option', function()
         end)
 
         loon.run({uncolored = true})
-    end)
+    end, normalizeStack)
 end)
 
 -----------------------------------------------------------------------------
@@ -166,7 +170,7 @@ test.add('assertions', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('assert.near', function()
         loon.add('near', function()
@@ -193,7 +197,7 @@ test.add('assertions', function()
         end)
 
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('assert.error.contains', function()
         loon.add('error.contains', function()
@@ -215,7 +219,7 @@ test.add('assertions', function()
         end)
 
         loon.run()
-    end, normalizeFilePath)
+    end, normalizeStack)
 end)
 
 -----------------------------------------------------------------------------
@@ -240,7 +244,7 @@ test.add('test suites', function()
         end)
         loon.suite.stop('suite 2')
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('nested suites', function()
         loon.suite.start('suite 1')
@@ -266,7 +270,7 @@ test.add('test suites', function()
         loon.suite.start('suite nested 2')
         loon.suite.stop('suite 2')
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('mixed default and suites (1)', function()
         loon.add('jabberwock', function()
@@ -288,7 +292,7 @@ test.add('test suites', function()
         end)
         loon.suite.stop('suite 2')
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('mixed default and suites (2)', function()
         loon.suite.start('suite 1')
@@ -310,7 +314,7 @@ test.add('test suites', function()
             eq(4, 4)
         end)
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('suite.add', function()
         loon.suite.add('suite 1', function()
@@ -334,7 +338,7 @@ test.add('test suites', function()
             end)
         end)
         loon.run()
-    end)
+    end, normalizeStack)
 end)
 -----------------------------------------------------------------------------
 test.add('table output', function()
@@ -343,7 +347,7 @@ test.add('table output', function()
             eq({a = 1, b = 2}, {a = 1, b = 3})
         end)
         loon.run()
-    end)
+    end, normalizeStack)
 
     snap.output('table equality (uncolored, deeper)', function()
         loon.add('flat', function()
@@ -360,7 +364,7 @@ test.add('table output', function()
         end)
 
         loon.run({uncolored = true})
-    end)
+    end, normalizeStack)
 end)
 
 test.suite.stop('terminal output')
