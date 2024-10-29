@@ -1,7 +1,9 @@
 -----------------------------------------------------------------------------
--- A super-lighweight testing library.
+-- A lighweight testing library.
 local export = {
-    assert = {},
+    assert = {
+        error = {}
+    },
     suite = {},
     plugin = {}
 }
@@ -90,7 +92,7 @@ local function defaultFailMsg(srcLocation, ...)
 end
 
 local function equalsFailMsg(srcLocation, got, expected, text)
-    local message = text and fmt("%s\n", color.msg(text)) or ''
+    local preamble = text and fmt("%s\n", color.msg(text)) or ''
     local comparison
     expected = color.value(stringify(expected))
     got = color.fail(stringify(got))
@@ -103,7 +105,34 @@ local function equalsFailMsg(srcLocation, got, expected, text)
         comparison = fmt('expected: \n%s.\ngot: \n%s', expected, got)
     end
 
-    return message .. srcLocation .. comparison
+    return preamble .. srcLocation .. comparison
+end
+
+local function nearlyEqualsFailMsg(srcLocation, got, expected, tolerance, text)
+    local preamble = text and fmt("%s\n", color.msg(text)) or ''
+    local outby = color.fail(stringify(math.abs(expected - got)))
+    expected = color.value(stringify(expected))
+    got = color.fail(stringify(got))
+    tolerance = color.warn(stringify(tolerance or 1e-10))
+
+    local comparison = fmt('expected: %s to be nearly %s (tolerance of %s, out by %s)', got, expected, tolerance, outby)
+
+    return preamble .. srcLocation .. comparison
+end
+
+local function errorFailMsg(srcLocation, expectedError, errorFunction)
+    local _, message = pcall(errorFunction)
+
+    return equalsFailMsg(srcLocation, message, expectedError, 'error not thrown as expected')
+end
+
+local function errorContains(errorMessage, errorFunction)
+    local success, message = pcall(errorFunction)
+    return not success and type(message) == 'string' and message:find(errorMessage)
+end
+
+local function nearlyEquals(a, b, tolerance)
+    return math.abs(a - b) <= (tolerance or 1e-10)
 end
 
 local function deepEquals(a, b)
@@ -558,11 +587,19 @@ function export.assert.create(yourAssert, failMsgFn)
     end
 end
 
--- The main (currently only) assertion function is `equals`, aliased to `eq`,
--- which compares two values for equality. This is a deep comparison, meaning
--- that tables are compared recursively.
+-- Deep comparison equality, meaning tables are compared recursively.
+-- Takes (got, expected, [message]).
 export.assert.equals = export.assert.create(deepEquals, equalsFailMsg)
 export.assert.eq = export.assert.equals -- alias
+
+-- A numeric comparison with tolerance.
+-- Takes (got, expected, [tolerance, [message]]).
+export.assert.near = export.assert.create(nearlyEquals, nearlyEqualsFailMsg)
+export.assert.nearly = export.assert.create(nearlyEquals, nearlyEqualsFailMsg)
+
+-- A check that an error is thrown, and its message contains a certain string.
+-- Takes (expectedMessage, functionToThrowError).
+export.assert.error.contains = export.assert.create(errorContains, errorFailMsg)
 
 --------------------------------------------------------------------------------------
 -- Runs the tests, outputting the results in one of several ways,

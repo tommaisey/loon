@@ -23,6 +23,7 @@ local function normalizeFilePath(msg)
     return msg
         :gsub('terminal%-output%.lua:%d+: in main chunk', '[[path normalized for test]]')
         :gsub('all%.lua:%d+: in main chunk', '[[path normalized for test]]')
+        :gsub('%./', '')
 end
 
 -----------------------------------------------------------------------------
@@ -152,6 +153,69 @@ test.add('uncolored option', function()
 
         loon.run({uncolored = true})
     end)
+end)
+
+-----------------------------------------------------------------------------
+test.add('assertions', function()
+    snap.output('assert.equals', function()
+        loon.add('equals', function()
+            loon.assert.eq(1, 1)
+            loon.assert.equals(1, 1)
+            loon.assert.eq(3, 5)
+            loon.assert.equals(3, 5)
+        end)
+
+        loon.run()
+    end)
+
+    snap.output('assert.near', function()
+        loon.add('near', function()
+            loon.assert.near(7, 7)
+            loon.assert.nearly(7, 7)
+
+            loon.assert.near(7, 7, 0.1)
+            loon.assert.nearly(7, 7, 0.1)
+
+            loon.assert.near(7, 7.05, 0.1)
+            loon.assert.nearly(7, 7.05, 0.1)
+            loon.assert.near(7, 6.95, 0.1)
+            loon.assert.nearly(7, 6.95, 0.1)
+
+            loon.assert.near(7.8, 8, 0.1)
+            loon.assert.nearly(7.8, 8, 0.1)
+            loon.assert.near(8.2, 8, 0.08)
+            loon.assert.nearly(8.2, 8, 0.08)
+
+            loon.assert.near(7, 8, 1.2)
+            loon.assert.nearly(7, 8, 1.2)
+            loon.assert.near(8, 8, 1.2)
+            loon.assert.nearly(8, 7, 1.2)
+        end)
+
+        loon.run()
+    end)
+
+    snap.output('assert.error.contains', function()
+        loon.add('error.contains', function()
+            loon.assert.error.contains('blammo', function()
+                error('blammo')
+            end)
+
+            loon.assert.error.contains('blammo', function()
+                error('and blammo was his namo')
+            end)
+
+            loon.assert.error.contains('[Bb]lammo', function()
+                error('casing Blammo how I wish')
+            end)
+
+            loon.assert.error.contains('[Bb]lammo', function()
+                error('anyone met my mate dammo?')
+            end)
+        end)
+
+        loon.run()
+    end, normalizeFilePath)
 end)
 
 -----------------------------------------------------------------------------

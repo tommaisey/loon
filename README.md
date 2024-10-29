@@ -46,11 +46,12 @@ these approaches, taking configuration from the command-line or a fallback
 config for items that weren't specified.
 
 ``` lua
--- explicit config
+-- explicit config: no colors and printing failing tests only
 test.run({uncolored = true, terse = true})
--- use command-line arguments
+-- using command-line arguments.
+-- the options above would translate as: 'lua tests/my-tests.lua --uncolored --terse'
 test.run(arg)
--- use command-line arguments with default fallbacks
+-- using command-line arguments with default fallbacks if not specified
 test.run(arg, {uncolored = true, terse = true})
 ```
 
@@ -58,6 +59,42 @@ To find out which arguments are supported, you can run with the `--help` flag.
 
 ```sh
 $ lua tests/my-tests.lua --help
+```
+
+## assertions
+
+A small suite of assertions are shipped with `loon`, and it's important that you use
+assertions that integrate with `loon` for the best reporting (regular `assert()` will
+cause a test to fail, but the output won't be very readable).
+
+You can define custom assertions quite easily (see the [custom assertions](#custom-assertions)
+section for more), so we keep the default choices lightweight and general.
+
+All assertions are in the `assert` sub-table of the main `loon` module.
+Some assertions have aliases so you can choose the version that fits with your style.
+Of course you can define your own local aliases if you prefer.
+
+```lua
+local test = require('loon')
+
+test.add('assertion types', function()
+    -- the main equality check
+    test.assert.equals(2, 2, 'optional message')
+    test.assert.eq(2, 2, 'alias for equals')
+
+    -- equals does deep-comparison of tables:
+    test.assert.eq({a = 1, b = {c = 2}}, {a = 1, b = {c = 9}}, 'this will fail')
+
+    -- checks that a number is close to another number (within a tolerance factor)
+    test.assert.near(5.1, 5, 0.2, 'optional message')
+    test.assert.nearly(5.1, 5, 0.2, 'alias for near')
+
+    -- checks that an error is thrown, and it contains the expected string.
+    -- the string may be a Lua pattern if you need more flexibility
+    test.assert.error.contains('[Ee]xpected [Ss]tring', function()
+        somethingThatShouldThrowAnError()
+    end)
+end)
 ```
 
 ## suites
