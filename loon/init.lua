@@ -678,7 +678,7 @@ function export.run(configOrArgs, configDefaults)
     })
 
     if config.help then
-        args.describe(argsMerged, argsMergedDefaults, configDefaults.helpTitle)
+        args.describe(argsMerged, argsMergedDefaults, (configDefaults or {}).helpTitle)
         os.exit(0)
     end
 
