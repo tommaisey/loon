@@ -7,4 +7,5 @@ test.grouped(
     'tests.junit-output'
 )
 
-test.run(arg)
+-- The description only turns up when running with the --help flag
+test.run(arg, {helpTitle = "Loon's own test suite."})

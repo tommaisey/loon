@@ -8,13 +8,15 @@
 local export = {}
 local fmt = string.format
 local insert = table.insert
+local iowrite = io.write
 
-local function arrayToString(array)
+local function arrayToString(array, separator, fn)
     local strs = {}
+    fn = fn or function(x) return x end
     for _, value in ipairs(array) do
-        insert(strs, tostring(value))
+        insert(strs, fn(tostring(value)))
     end
-    return table.concat(strs, ', ')
+    return table.concat(strs, separator or ', ')
 end
 
 local function ofType(spec, typeString)
@@ -107,7 +109,9 @@ local function convertIfArgs(config, specs, ignoreUnrecognized)
                 value = value:match('["\']?([^"\']+)')
             end
 
-            if ofType(spec, 'boolean') then
+            local options = assert(spec.options, 'spec item lacks options array')
+
+            if ofType(options, 'boolean') then
                 if value == nil then
                     value = assert(isBooleanSwitch) -- true
                 else
@@ -119,7 +123,7 @@ local function convertIfArgs(config, specs, ignoreUnrecognized)
                         error(fmt("expected 'true' or 'false' value for '%s', got: '%s'", name, value))
                     end
                 end
-            elseif ofType(spec, 'number') then
+            elseif ofType(options, 'number') then
                 value = assert(tonumber(value), "couldn't convert argument to a number: " .. value)
             end
 
@@ -133,16 +137,17 @@ end
 local function verifyWithSpec(config, specs)
     for k, spec in pairs(specs) do
         local element = config[k]
+        local options = spec.options
 
         if element ~= nil then
-            if type(spec) == 'string' then
+            if type(options) == 'string' then
                 local t = type(element)
-                if t ~= spec then
+                if t ~= options then
                     local str = tostring(element)
-                    error(fmt("config element '%s' should have type '%s' but is '%s', %s"), k, spec, t, str)
+                    error(fmt("config element '%s' should have type '%s' but is '%s', %s"), k, options, t, str)
                 end
-            elseif not contains(spec, element) then
-                local possible = arrayToString(spec)
+            elseif not contains(options, element) then
+                local possible = arrayToString(options)
                 error(fmt("config element '%s' should be one of: %s.\ngot: %q", k, possible, tostring(element)))
             end
         end
@@ -176,6 +181,63 @@ function export.verify(def)
     applyDefaults(config, defaults)
 
     return verifyWithSpec(config, spec)
+end
+
+---------------------------------------------------------------------------
+function export.describe(spec, defaults, helpTitle)
+    local color = require('loon.color').ansi
+    local ordered = {}
+
+    for k, v in pairs(spec) do
+        table.insert(ordered, {k, v})
+    end
+
+    table.sort(ordered, function(a, b) return a[1] < b[1] end)
+
+    iowrite(helpTitle or 'A Lua test suite written with Loon.', '\n\n')
+    local spaced = {}
+
+    for _, elem in ipairs(ordered) do
+        local name = elem[1]
+        local nameS = color.green('--' .. name)
+        local descS = elem[2].desc or 'no description'
+
+        local default = defaults[elem[1]]
+        local options = assert(elem[2].options)
+        local boolean = ofType(options, 'boolean')
+        local freeform = type(options) == 'string'
+        local defaultS, requiredS, optionsS = '', elem[2].required and '(required)' or ''
+
+        if boolean then
+            optionsS = fmt('[%s]', color.grey('flag'))
+            defaultS = fmt('(default: %s)', color.yellow(default == true and 'on' or 'off'))
+        elseif freeform then
+            optionsS = fmt('[%s]', color.orange(options))
+        else
+            optionsS = fmt('[%s]', arrayToString(options, '|', color.blue))
+            defaultS = fmt('(default: %s)', color.yellow(default))
+        end
+
+        table.insert(spaced, {nameS, optionsS, descS, defaultS, requiredS, '\n'})
+    end
+
+    local max = 0
+
+    for _, elem in ipairs(spaced) do
+        max = math.max(max, #elem[1] + 1)
+    end
+
+    for _, elem in ipairs(spaced) do
+        elem[1] = elem[1] .. string.rep(' ', max - #elem[1])
+        iowrite(table.concat(elem, ' '))
+    end
+
+    iowrite(color.grey("\nFor strings, numbers or choices, supply the argument like this:"))
+    iowrite("\n  --name argument / --name=argument\n")
+
+    iowrite(color.grey("\nFor flags, no argument is required to turn the option on."))
+    iowrite(color.grey("\nTo turn it off, supply an option of 'false':"))
+    iowrite("\n  --name false / --name=false\n")
 end
 
 return export

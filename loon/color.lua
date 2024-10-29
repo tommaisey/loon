@@ -1,13 +1,13 @@
 local ansi = {}
 
-function ansi.foreground(code)
-    if code <= 47 then
+function ansi.foreground(code, bit8)
+    if bit8 then
         return function(text)
-            return "\27[" .. tostring(code) .. "m" .. tostring(text) .. "\27[0m"
+            return "\27[38;5;" .. tostring(code) .. "m" .. tostring(text) .. "\27[0m"
         end
     else
         return function(text)
-            return "\27[38;5;" .. tostring(code) .. "m" .. tostring(text) .. "\27[0m"
+            return "\27[" .. tostring(code) .. "m" .. tostring(text) .. "\27[0m"
         end
     end
 end
@@ -18,7 +18,8 @@ ansi.yellow = ansi.foreground(33)
 ansi.blue = ansi.foreground(34)
 ansi.magenta = ansi.foreground(35)
 ansi.cyan = ansi.foreground(36)
-ansi.orange = ansi.foreground(214)
+ansi.grey = ansi.foreground(37)
+ansi.orange = ansi.foreground(214, '8bit')
 
 local colored = {
     fail = ansi.red,
@@ -36,4 +37,4 @@ for key in pairs(colored) do
     uncolored[key] = tostring
 end
 
-return {yes = colored, no = uncolored}
+return {yes = colored, no = uncolored, ansi = ansi}

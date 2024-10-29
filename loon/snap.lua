@@ -6,8 +6,8 @@ local colored = require('loon.color')
 local color = colored.yes
 -----------------------------------------------------------------------------
 local argsBase = {
-    dir = 'string',
-    update = {true, false},
+    dir = {options = 'string', desc = "snapshot storage directory", required = true},
+    update = {options = {true, false}, desc = "interactively update snapshots"},
 }
 
 local argsBaseDefaults = {

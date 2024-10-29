@@ -19,8 +19,8 @@ test.suite.start('parsing')
 
 test.add('two booleans', function()
     local spec = {
-        one = {true, false},
-        two = {true, false}
+        one = {options = {true, false}},
+        two = {options = {true, false}}
     }
     local ex = {one = true, two = true}
 
@@ -30,9 +30,9 @@ end)
 
 test.add('booleans mixed with values', function()
     local spec = {
-        one = {true, false},
-        two = {true, false},
-        three = {'a', 'b'}
+        one = {options = {true, false}},
+        two = {options = {true, false}},
+        three = {options = {'a', 'b'}},
     }
     local exA = {one = true, two = true, three = "a"}
     local exB = {one = true, two = true, three = "b"}
@@ -45,9 +45,9 @@ end)
 
 test.add('values supplied with = syntax', function()
     local spec = {
-        one = {true, false},
-        two = {true, false},
-        three = {'a', 'b'}
+        one = {options = {true, false}},
+        two = {options = {true, false}},
+        three = {options = {'a', 'b'}},
     }
     local exA = {one = true, two = true, three = "a"}
     local exB = {one = true, two = true, three = "b"}
@@ -62,9 +62,9 @@ end)
 
 test.add('booleans supplied with = syntax', function()
     local spec = {
-        one = {true, false},
-        two = {true, false},
-        three = {true, false}
+        one = {options = {true, false}},
+        two = {options = {true, false}},
+        three = {options = {true, false}},
     }
 
     eq(verify({'--one', '--two', 'false', '--three'}, spec), {one = true, two = false, three = true})
@@ -75,9 +75,9 @@ end)
 
 test.add('values supplied as number', function()
     local spec = {
-        one = {true, false},
-        two = {true, false},
-        three = {4, 5}
+        one = {options = {true, false}},
+        two = {options = {true, false}},
+        three = {options = {4, 5}},
     }
     local ex4 = {one = true, two = true, three = 4}
     local ex5 = {one = true, two = true, three = 5}
@@ -96,9 +96,9 @@ test.suite.start('defaults')
 
 test.add('system defaults', function()
     local spec = {
-        one = {true, false},
-        two = {true, false},
-        three = {4, 5}
+        one = {options = {true, false}},
+        two = {options = {true, false}},
+        three = {options = {4, 5}},
     }
     local defaults = {
         one = true,
@@ -116,10 +116,10 @@ end)
 
 test.add('user defaults', function()
     local spec = {
-        one = {true, false},
-        two = {true, false},
-        three = {4, 5},
-        user = 'string'
+        one = {options = {true, false}},
+        two = {options = {true, false}},
+        three = {options = {4, 5}},
+        user = {options = 'string'},
     }
     local defaults = {
         one = true,

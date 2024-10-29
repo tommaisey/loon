@@ -17,11 +17,11 @@ local args = require('loon.args')
 
 -----------------------------------------------------------------------------
 local argsBase = {
-    output = {'terminal', 'junit'},
-    uncolored = {true, false},
-    terse = {true, false},
-    times = {true, false},
-    help = {true, false}
+    output = {options = {'terminal', 'junit'}, desc = "choose the output format"},
+    uncolored = {options = {true, false}, desc = "disable colors"},
+    terse = {options = {true, false}, desc = "don't print passing tests"},
+    times = {options = {true, false}, desc = "record times in junit output"},
+    help = {options = {true, false}, desc = "print this message"}
 }
 
 local argsBaseDefaults = {
@@ -48,7 +48,6 @@ local color = colored.yes
 
 -----------------------------------------------------------------------------
 -- Internal helper functions.
--- Compose and write a formatted string to the default IO output file.
 local function writef(fstring, ...)
     iowrite(fmt(fstring, ...), '\n')
 end
@@ -83,7 +82,7 @@ end
 
 -----------------------------------------------------------------------------
 -- Assertion inner functions.
--- These are built into exported function using `loon.assert.create()` further down.
+-- These are packaged into exported functions using `loon.assert.create()` further down.
 local function defaultFailMsg(srcLocation, ...)
     if select(..., '#') == 0 then
         return fmt('%s: assertion failed (no arguments)', srcLocation)
@@ -198,6 +197,7 @@ local function nilTest(got) return got == nil end
 
 --------------------------------------------------------------------------------------
 -- The stateful part of the library, so be careful!
+--------------------------------------------------------------------------------------
 -- `tests` is the array of tests registered by user code so far.
 -- `asserts` is the tally of assertions that have run in a currently running test.
 local tests = {}
@@ -492,8 +492,8 @@ local function runJunit(config)
 end
 
 --------------------------------------------------------------------------------------
--- The public part of the library.
-
+-- The public part of the library begins here.
+--------------------------------------------------------------------------------------
 -- Add a test to be run. This test should contain at least one
 -- assertion from Loon's assert sub-modules. After adding
 -- some tests, you must call `run()` to run the tests.
@@ -547,6 +547,8 @@ function export.grouped(...)
 end
 
 --------------------------------------------------------------------------------------
+-- Plugin API
+--------------------------------------------------------------------------------------
 -- Allows a plugin to set a temporary configuration which is saved
 -- alongside each test added thereafter. This can be retrieved when
 -- the test runs using `getConfig()`, so that the plugin can adjust
@@ -590,6 +592,8 @@ function export.plugin.summary(name, func)
     insert(pluginSummariesOrdered, func)
 end
 
+--------------------------------------------------------------------------------------
+-- Assertions
 --------------------------------------------------------------------------------------
 -- Allows you to create an assertion function that hooks into the loon
 -- test system. The returned function will have the same arguments as
@@ -660,6 +664,8 @@ export.assert.string.contains = export.assert.create(stringContains, stringConta
 export.assert.error.contains = export.assert.create(errorContains, errorFailMsg)
 
 --------------------------------------------------------------------------------------
+-- Runners
+--------------------------------------------------------------------------------------
 -- Runs the tests, outputting the results in one of several ways,
 -- depending on the configuration table.
 function export.run(configOrArgs, configDefaults)
@@ -672,12 +678,7 @@ function export.run(configOrArgs, configDefaults)
     })
 
     if config.help then
-        writef('A Lua test suite written with Loon.\n')
-        writef('%s %s   %s', color.pass('--output'), color.value('"terminal|junit"'), 'choose the output format (default: terminal)')
-        writef('%s                 %s', color.pass('--uncolored'), 'disable colors (default: off)')
-        writef('%s                     %s', color.pass('--terse'), 'skip printing passing tests (default: off)')
-        writef('%s                     %s', color.pass('--times'), 'note times in junit output (default: on)')
-        writef('%s                      %s', color.pass('--help'), 'print this message')
+        args.describe(argsMerged, argsMergedDefaults, configDefaults.helpTitle)
         os.exit(0)
     end
 
