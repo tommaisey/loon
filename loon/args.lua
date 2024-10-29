@@ -184,8 +184,8 @@ function export.verify(def)
 end
 
 ---------------------------------------------------------------------------
-function export.describe(spec, defaults, helpTitle)
-    local color = require('loon.color').ansi
+function export.describe(spec, defaults, uncolored, helpTitle)
+    local color = require('loon.color')[uncolored and "no" or "ansi"]
     local ordered = {}
 
     for k, v in pairs(spec) do

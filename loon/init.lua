@@ -25,7 +25,7 @@ local argsBase = {
 }
 
 local argsBaseDefaults = {
-    uncolored = os.getenv('NO_COLOR'),
+    uncolored = os.getenv('NO_COLOR') ~= nil,
     times = true,
     help = false,
     output = 'terminal'
@@ -642,17 +642,17 @@ export.assert.eq = export.assert.equals -- alias
 -- Takes (got, [message]).
 export.assert.truthy = export.assert.create(truthyTest, truthyFailMsg)
 export.assert.isTrue = export.assert.create(trueTest, trueFailMsg)
-export.assert.is_true = export.assert.create(trueTest, trueFailMsg)
+export.assert.is_true = export.assert.isTrue
 export.assert.falsey = export.assert.create(falseyTest, falseyFailMsg)
 export.assert.isFalse = export.assert.create(falseTest, falseFailMsg)
-export.assert.is_false = export.assert.create(falseTest, falseFailMsg)
+export.assert.is_false = export.assert.isFalse
 export.assert.isNil = export.assert.create(nilTest, nilFailMsg)
-export.assert.is_nil = export.assert.create(nilTest, nilFailMsg)
+export.assert.is_nil = export.assert.isNil
 
 -- Numeric comparison with tolerance.
 -- Takes (got, expected, [tolerance, [message]]).
 export.assert.near = export.assert.create(nearlyEquals, nearlyEqualsFailMsg)
-export.assert.nearly = export.assert.create(nearlyEquals, nearlyEqualsFailMsg)
+export.assert.nearly = export.assert.near
 
 -- Checks that the received string contains the other.
 -- The 'stringItMustContain' may be a pattern.
@@ -678,7 +678,9 @@ function export.run(configOrArgs, configDefaults)
     })
 
     if config.help then
-        args.describe(argsMerged, argsMergedDefaults, (configDefaults or {}).helpTitle)
+        local uncolored = config.uncolored
+        local helpTitle = (configDefaults or {}).helpTitle
+        args.describe(argsMerged, argsMergedDefaults, uncolored, helpTitle)
         os.exit(0)
     end
 

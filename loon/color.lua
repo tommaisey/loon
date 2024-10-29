@@ -36,5 +36,8 @@ local uncolored = {}
 for key in pairs(colored) do
     uncolored[key] = tostring
 end
+for key in pairs(ansi) do
+    uncolored[key] = tostring
+end
 
 return {yes = colored, no = uncolored, ansi = ansi}
