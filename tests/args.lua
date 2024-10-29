@@ -14,9 +14,9 @@ local function verify(array, spec, defaults, userDefaults)
 end
 
 -----------------------------------------------------------------
-test.suite.start('arg interpretation and validation')
-
+test.suite.start('command line arguments')
 test.suite.start('parsing')
+
 test.add('two booleans', function()
     local spec = {
         one = {true, false},
@@ -90,9 +90,10 @@ test.add('values supplied as number', function()
     eq(verify({'--one', '--three=\'4\'', '--two'}, spec), ex4)
     eq(verify({'--one', '--three=\'5\'', '--two'}, spec), ex5)
 end)
-test.suite.stop('parsing')
 
+test.suite.stop('parsing')
 test.suite.start('defaults')
+
 test.add('system defaults', function()
     local spec = {
         one = {true, false},
@@ -133,6 +134,5 @@ test.add('user defaults', function()
     eq(verify({}, spec, defaults, {}), ex, 'with empty user defaults')
     eq(verify({}, spec, defaults, userDefaults), exuser, 'with user defaults')
 end)
-test.suite.stop('defaults')
 
 test.run(arg)

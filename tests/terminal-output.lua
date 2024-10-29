@@ -358,5 +358,4 @@ test.add('table output', function()
     end, normalizeStack)
 end)
 
-test.suite.stop('terminal output')
 test.run(arg)
