@@ -316,17 +316,16 @@ end
 
 local function ignoringCaseFailMsg(srcLocation, a, b)
     if type(a) ~= type(b) or type(a) ~= 'string' then
-        return string.format('%s: expected two strings, got: "%s" and "%s"', srcLocation, type(a), type(b))
+        return string.format('%s expected two strings, got: %q and %q', srcLocation, type(a), type(b))
     end
 
-    return string.format('%s: strings not equal (ignoring case): "%s" vs. "%s"', srcLocation, a, b,)
+    return string.format('%s strings not equal (ignoring case): %q vs. %q', srcLocation, a, b)
 end
 
 -- We'll return a module so this can be required from your test files.
 return {
     equalIgnoringCase = loon.assert.create(equalIgnoringCase, ignoringCaseFailMsg)
 }
-
 ```
 
 ### custom reporting and arguments
