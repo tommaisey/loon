@@ -28,7 +28,6 @@ test.add('two booleans', function()
     local ex = {one = true, two = true}
 
     eq(verify({'--one', '--two'}, spec), ex)
-    eq(verify({'-one', '-two'}, spec), ex)
 end)
 
 test.add('booleans mixed with values', function()
@@ -163,11 +162,11 @@ test.add('help description', function()
     end)
 
     snap.output('args help description (uncolored)', function()
-        args.describe(spec, defaults, 'uncolored')
+        args.describe(spec, defaults, nil, 'uncolored')
     end)
 
     snap.output('args help description (title)', function()
-        args.describe(spec, defaults, false, 'A custom help title')
+        args.describe(spec, defaults, nil, false, 'A custom help title')
     end)
 end)
 

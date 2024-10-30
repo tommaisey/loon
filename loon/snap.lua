@@ -14,6 +14,11 @@ local argsBaseDefaults = {
     update = false,
 }
 
+local argsBaseAbbreviations = {
+    d = 'dir',
+    u = 'update'
+}
+
 -----------------------------------------------------------------------------
 -- Cache some globals for speed.
 local fmt = string.format
@@ -248,7 +253,13 @@ function export.config(configOrArgs, configDefaults)
     assert(config.dir, 'you failed to configure the output directory.\n'
         .. 'pass the --dir argument at the terminal, or "dir" element in the config.')
 
-    loon.plugin.config(argsBase, argsBaseDefaults, config.dir:gsub('[\\/]$', '') .. '/')
+    loon.plugin.config({
+        pluginName = 'snapshots',
+        arguments = argsBase,
+        defaults = argsBaseDefaults,
+        abbreviations = argsBaseAbbreviations,
+        customData = config.dir:gsub('[\\/]$', '') .. '/'
+    })
 
     loon.plugin.summary('snapshot: print new tests', function()
         if #new > 0 then

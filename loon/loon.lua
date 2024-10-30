@@ -16,6 +16,10 @@ local colored = require('loon.color')
 local args = require('loon.args')
 
 -----------------------------------------------------------------------------
+-- Describes each argument and the possible values it can have.
+-- This is the 'base' set of options before plugins add their
+-- own. We don't mutate this table, but make a clone first so
+-- we can reset it.
 local argsBase = {
     output = {options = {'terminal', 'junit'}, desc = "choose the output format"},
     uncolored = {options = {true, false}, desc = "disable colors"},
@@ -24,11 +28,20 @@ local argsBase = {
     help = {options = {true, false}, desc = "print this message"}
 }
 
+-- Describes default values for the arguments above.
 local argsBaseDefaults = {
     uncolored = os.getenv('NO_COLOR') ~= nil,
     times = true,
     help = false,
     output = 'terminal'
+}
+
+-- Describes abbreviated names for the arguments above.
+local argsBaseAbbreviations = {
+    c = 'uncolored',
+    t = 'terse',
+    h = 'help',
+    o = 'output',
 }
 
 -----------------------------------------------------------------------------
@@ -85,6 +98,18 @@ local function clone(tbl)
         cloned[k] = v
     end
     return cloned
+end
+
+local function mergeInto(dest, src, actionOnDuplicate)
+    for k, v in pairs(src or {}) do
+        local existing = dest[k]
+
+        if actionOnDuplicate and existing then
+            actionOnDuplicate(k, v, existing)
+        else
+            dest[k] = v
+        end
+    end
 end
 
 -----------------------------------------------------------------------------
@@ -229,9 +254,11 @@ local suiteNow = suiteDefault
 local suiteStack = {suiteNow}
 local pluginSummaries = {}
 local pluginSummariesOrdered = {}
-local pluginConfig
+local pluginCustomData
 local argsMerged = clone(argsBase)
 local argsMergedDefaults = clone(argsBaseDefaults)
+local argsMergedAbbreviations = clone(argsBaseAbbreviations)
+local configuredPlugins = {}
 
 local function resetSuite()
     suiteNow = suiteDefault
@@ -244,9 +271,11 @@ local function reset()
     asserts = {successes = 0, failed = {}}
     pluginSummaries = {}
     pluginSummariesOrdered = {}
-    pluginConfig = nil
+    pluginCustomData = nil
+    configuredPlugins = {}
     argsMerged = clone(argsBase)
     argsMergedDefaults = clone(argsBaseDefaults)
+    argsMergedAbbreviations = clone(argsBaseAbbreviations)
     resetSuite()
 end
 
@@ -268,16 +297,16 @@ local function runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
 
     for _, info in ipairs(tests) do
         asserts.successes, asserts.failed = 0, {}
-        local name, fn, suite, config = info[1], info[2], info[3], info[4]
+        local name, fn, suite, customData = info[1], info[2], info[3], info[4]
 
-        pluginConfig = config -- may be retrieved by plugins
+        pluginCustomData = customData -- may be retrieved by plugins during test
 
         local noError, errorObj = xpcall(fn, function(errorMsg)
             local norm = normalizeRelativePath
             return {msg = norm(errorMsg), trace = norm(debug.traceback(nil, 8))}
         end)
 
-        pluginConfig = nil
+        pluginCustomData = nil
 
         if suite ~= currentSuite then
             if #suite <= #currentSuite and suite ~= suiteDefault then
@@ -533,7 +562,7 @@ end
 -- assertion from Loon's assert sub-modules. After adding
 -- some tests, you must call `run()` to run the tests.
 function export.add(testName, testFunction)
-    insert(tests, {testName, testFunction, suiteNow, pluginConfig})
+    insert(tests, {testName, testFunction, suiteNow, pluginCustomData})
 end
 
 -- Begin a suite of tests. After this you should add some tests,
@@ -589,21 +618,46 @@ end
 -- the test runs using `getConfig()`, so that the plugin can adjust
 -- behaviour according to the config that was set for that region
 -- of code.
-function export.plugin.config(arguments, defaults, customData)
-    for k, v in pairs(arguments) do
-        argsMerged[k] = v
-    end
-    for k, v in pairs(defaults) do
-        argsMergedDefaults[k] = v
+function export.plugin.config(config)
+    local pluginName = assert(config.pluginName, "your plugin config must supply a 'pluginName'")
+
+    -- always store the custom data, as it might be different
+    -- from invocation to invocation.
+    pluginCustomData = config.customData
+
+    -- arguments shouldnt' change from invocation to invocation, so
+    -- we bail out here to avoid additional work, and also to prevent
+    -- false positives when detecting conflicting arguments.
+    if configuredPlugins[pluginName] then
+        return
+    else
+        configuredPlugins[pluginName] = true
     end
 
-    pluginConfig = customData
+    -- Merge the arguments into the main argument list.
+    -- Plugins already have a chance to get argument values in their
+    -- own `config()` call, so the primary reasons to do this are so
+    -- we can print all the arguments in the --help text, and to
+    -- prevent conflicts between plugin argument definitions.
+    local warn = color.warn('warning')
+
+    mergeInto(argsMerged, config.arguments, function(name)
+        writef('%s: "%s" plugin arg "--%s" clashes with existing, disabling.', warn, pluginName, name)
+    end)
+    mergeInto(argsMergedDefaults, config.defaults)
+    mergeInto(argsMergedAbbreviations, config.abbreviations, function(abbrev, fullName, existingName)
+        writef(
+            '%s: "%s" plugin arg "-%s" (abbreviates "--%s")\n'..
+            'clashes with existing abbreviation for "--%s".',
+            warn, pluginName, abbrev, fullName, existingName
+        )
+    end)
 end
 
 -- Get the custom data that was set at the time that the current
 -- (running) test was defined by `plugin.config()`
 function export.plugin.getCustomData()
-    return pluginConfig
+    return pluginCustomData
 end
 
 -- Allows plugins (such as the snapshot testing plugin) to register
@@ -708,14 +762,19 @@ function export.run(configOrArgs, configDefaults)
         config = configOrArgs,
         spec = argsMerged,
         defaults = argsMergedDefaults,
+        abbreviations = argsMergedAbbreviations,
         userDefaults = configDefaults,
         ignoreUnrecognised = false
     })
 
     if config.help then
-        local uncolored = config.uncolored
-        local helpTitle = (configDefaults or {}).helpTitle
-        args.describe(argsMerged, argsMergedDefaults, uncolored, helpTitle)
+        args.describe({
+            spec = argsMerged,
+            defaults = argsMergedDefaults,
+            abbreviations = argsMergedAbbreviations,
+            helpTitle = (configDefaults or {}).helpTitle,
+            uncolored = config.uncolored
+        })
         os.exit(0)
     end
 

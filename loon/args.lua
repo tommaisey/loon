@@ -43,6 +43,24 @@ local function contains(array, value)
     return false
 end
 
+local function reverseKeyValue(tbl)
+    local new = {}
+    for abbrev, fullName in pairs(tbl) do
+        new[fullName] = abbrev
+    end
+    return new
+end
+
+--------------------------------------------------------------------------------------
+local booleanConversions = {
+    ['true'] = true,
+    ['on'] = true,
+    ['yes'] = true,
+    ['false'] = false,
+    ['off'] = false,
+    ['no'] = false,
+}
+
 local function isArgsList(config)
     local idx = -1
 
@@ -59,7 +77,69 @@ local function isArgsList(config)
     end
 end
 
-local function convertIfArgs(config, specs, ignoreUnrecognized)
+local function consumeArg(name, raw, specs, config, convertedConfig, idx, ignoreUnrecognized)
+    local value, isBooleanSwitch
+
+    if name:find('=') then
+        name, value = name:match('([^=]+)=([^=]+)')
+
+        if not name or not value or #name == 0 or #value == 0 then
+            error("malformed argument with '=' syntax: '" .. name .. "'")
+        end
+
+        idx = idx + 1
+    else
+        local nextItem = config[idx + 1]
+
+        if nextItem ~= nil and not nextItem:find('^%-') then
+            value = nextItem
+            idx = idx + 2
+        else
+            isBooleanSwitch = true
+            idx = idx + 1
+        end
+    end
+
+    local spec = specs[name]
+
+    if spec == nil then
+        if not ignoreUnrecognized then
+            if #name == 1 and raw:match('^%-%-') then
+                error(fmt("unrecognized argument: %s. Did you mean -%s?", raw, name))
+            else
+                error("unrecognized argument: " .. raw)
+            end
+        end
+    else
+        if value then
+            value = value:match('["\']?([^"\']+)')
+        end
+
+        local options = assert(spec.options, 'spec item lacks options array')
+
+        if ofType(options, 'boolean') then
+            if value == nil then
+                value = assert(isBooleanSwitch) -- true
+            else
+                value = booleanConversions[value]
+
+                if value == nil then
+                    error(fmt("expected 'true/on/yes' or 'false/no/off' value for '%s', got: '%s'", name, value))
+                end
+            end
+        elseif ofType(options, 'number') then
+            value = assert(tonumber(value), "couldn't convert argument to a number: " .. value)
+        end
+
+        convertedConfig[name] = value
+    end
+
+    return idx
+end
+
+-- Checks if it's an args list, and if it is, converts it to a
+-- standard table with the help of the specs and abbreviations.
+local function convertIfArgs(config, specs, abbreviations, ignoreUnrecognized)
     if config == nil then
         return {}
     elseif not isArgsList(config) then
@@ -73,67 +153,27 @@ local function convertIfArgs(config, specs, ignoreUnrecognized)
         local item = config[idx]
         if item == nil then break end
 
-        local value
-        local isBooleanSwitch
-        local name = item:match('^%-*(.+)$')
-        assert(name, "malformed argument: " .. name)
+        local name = item:match('^%-%-(.+)$')
 
-        if name:find('=') then
-            name, value = name:match('([^=]+)=([^=]+)')
-
-            if not name or not value or #name == 0 or #value == 0 then
-                error("malformed argument with '=' syntax: '" .. item .. "'")
-            end
-
-            idx = idx + 1
+        if name then
+            idx = consumeArg(name, item, specs, config, convertedConfig, idx, ignoreUnrecognized)
         else
-            local nextItem = config[idx + 1]
+            local flags = assert(item:match('^%-(.+)$'), 'cannot parse as a flag or option: ' .. item)
 
-            if nextItem ~= nil and not nextItem:find('^%-') then
-                value = nextItem
-                idx = idx + 2
+            if #flags == 1 then
+                name = abbreviations[flags] or flags
+                idx = consumeArg(name, item, specs, config, convertedConfig, idx, ignoreUnrecognized)
             else
-                isBooleanSwitch = true
-                idx = idx + 1
+                error('combining single-letter flags is not yet supported!')
             end
-        end
-
-        local spec = specs[name]
-
-        if spec == nil then
-            if not ignoreUnrecognized then
-                error("unrecognized argument: " .. name)
-            end
-        else
-            if value then
-                value = value:match('["\']?([^"\']+)')
-            end
-
-            local options = assert(spec.options, 'spec item lacks options array')
-
-            if ofType(options, 'boolean') then
-                if value == nil then
-                    value = assert(isBooleanSwitch) -- true
-                else
-                    if value == 'true' then
-                        value = true
-                    elseif value == 'false' then
-                        value = false
-                    else
-                        error(fmt("expected 'true' or 'false' value for '%s', got: '%s'", name, value))
-                    end
-                end
-            elseif ofType(options, 'number') then
-                value = assert(tonumber(value), "couldn't convert argument to a number: " .. value)
-            end
-
-            convertedConfig[name] = value
         end
     end
 
     return convertedConfig
 end
 
+-- Takes a config (that's been converted to a standard table
+-- if it was an args list) and verifies that it meets the spec.
 local function verifyWithSpec(config, specs)
     for k, spec in pairs(specs) do
         local element = config[k]
@@ -156,6 +196,7 @@ local function verifyWithSpec(config, specs)
     return config
 end
 
+-- Applies any defaults if they're missing in the config.
 local function applyDefaults(config, defaults)
     if defaults then
         for k, v in pairs(defaults) do
@@ -169,12 +210,13 @@ end
 ---------------------------------------------------------------------------
 function export.verify(def)
     local spec = assert(def.spec, 'args.verify() requires a "spec" element')
-    local config = def.config
-    local defaults = def.defaults
-    local userDefaults = def.userDefaults
+    local config = def.config or {}
+    local defaults = def.defaults or {}
+    local userDefaults = def.userDefaults or {}
+    local abbreviations = def.abbreviations or {}
     local ignoreUnrecognized = def.ignoreUnrecognized
 
-    config = convertIfArgs(config, spec, ignoreUnrecognized)
+    config = convertIfArgs(config, spec, abbreviations, ignoreUnrecognized)
 
     -- Apply user defaults first, to override system defaults
     applyDefaults(config, userDefaults)
@@ -184,9 +226,16 @@ function export.verify(def)
 end
 
 ---------------------------------------------------------------------------
-function export.describe(spec, defaults, uncolored, helpTitle)
+function export.describe(def)
+    local spec = assert(def.spec, 'args.describe() requires a "spec" element')
+    local defaults = def.defaults or {}
+    local abbreviations = def.abbreviations or {}
+    local uncolored = def.uncolored
+    local helpTitle = def.helpTitle or 'A Lua test suite written with Loon.'
+
     local color = require('loon.color')[uncolored and "no" or "ansi"]
     local ordered = {}
+    local abbreversed = reverseKeyValue(abbreviations) -- key/value swapped
 
     for k, v in pairs(spec) do
         table.insert(ordered, {k, v})
@@ -194,12 +243,15 @@ function export.describe(spec, defaults, uncolored, helpTitle)
 
     table.sort(ordered, function(a, b) return a[1] < b[1] end)
 
-    iowrite(helpTitle or 'A Lua test suite written with Loon.', '\n\n')
+    iowrite(helpTitle, '\n\n')
     local spaced = {}
 
     for _, elem in ipairs(ordered) do
         local name = elem[1]
-        local nameS = color.green('--' .. name)
+        local abbrev = abbreversed[name]
+        local nameS = '--' .. color.orange(name) .. (abbrev and ('|-' .. color.orange(abbrev)) or '')
+        local len = 3 + #name + (abbrev and 2 + #abbrev or 0)
+
         local descS = elem[2].desc or 'no description'
 
         local default = defaults[elem[1]]
@@ -212,23 +264,23 @@ function export.describe(spec, defaults, uncolored, helpTitle)
             optionsS = fmt('[%s]', color.grey('flag'))
             defaultS = fmt('(default: %s)', color.yellow(default == true and 'on' or 'off'))
         elseif freeform then
-            optionsS = fmt('[%s]', color.orange(options))
+            optionsS = fmt('[%s]', color.cyan(options))
         else
-            optionsS = fmt('[%s]', arrayToString(options, '|', color.blue))
+            optionsS = fmt('[%s]', arrayToString(options, '|', color.green))
             defaultS = fmt('(default: %s)', color.yellow(default))
         end
 
-        table.insert(spaced, {nameS, optionsS, descS, defaultS, requiredS, '\n'})
+        table.insert(spaced, {len = len, nameS, optionsS, descS, defaultS, requiredS, '\n'})
     end
 
     local max = 0
 
     for _, elem in ipairs(spaced) do
-        max = math.max(max, #elem[1] + 1)
+        max = math.max(max, elem.len)
     end
 
     for _, elem in ipairs(spaced) do
-        elem[1] = elem[1] .. string.rep(' ', max - #elem[1])
+        table.insert(elem, 2, string.rep(' ', max - elem.len))
         iowrite(table.concat(elem, ' '))
     end
 

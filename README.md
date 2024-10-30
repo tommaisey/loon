@@ -442,10 +442,12 @@ function myModule.config(configOrArgs, configDefaults)
     -- non-plugin tests.
     local customArguments = {myArgName = {true, false}}
     local customArgumentDefaults = {myArgName = false}
+    local customArgumentAbbreviations = {m = 'myArgName'}
 
     -- Use the built-in argument parser to extract and verify your custom
     -- arguments into a table.
     local config = args.verify({
+        pluginName = 'myPluginName',
         config = configOrArgs,
         spec = customArguments,
         defaults = customArgumentsDefaults,
@@ -460,7 +462,12 @@ function myModule.config(configOrArgs, configDefaults)
 
     -- Ok, now we can configure the `loon` runner to accept our custom arguments
     -- and to store the right custom data along with any subsequently defined tests.
-    loon.plugin.config(customArguments, customArgumentDefaults, pluginConfig)
+    loon.plugin.config({
+        arguments = customArguments,
+        defaults = customArgumentDefaults,
+        abbreviations = customArgumentAbbreviations,
+        customData = pluginConfig
+    })
 
     -- A summary function that runs after all the tests have run.
     -- Use this to print any custom messages you might have.
