@@ -2,7 +2,8 @@
 
 `loon` is a test library for the Lua programming language, with the following goals:
 
-- Small, with zero external dependencies (embeds the `serpent` library for pretty-printing)
+- Small (~1000 line of Lua without comments)
+- Zero external dependencies (embeds [`serpent`](https://github.com/pkulchenko/serpent) for pretty-printing)
 - Simple and attractive API, with no globals
 - Equally easy to run from the terminal or programatically
 - Beautiful output
