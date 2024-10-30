@@ -197,7 +197,7 @@ end
 local function makeTruthTest(expectedStr)
     return function (srcLocation, got, text)
         local preamble = text and fmt("%s\n", color.msg(text)) or ''
-        local expected = stringify(expectedStr, color.value)
+        local expected = color.value(expectedStr)
         got = stringify(got, color.fail)
 
         return preamble .. srcLocation .. fmt('expected: %s, got: %s', expected, got)
