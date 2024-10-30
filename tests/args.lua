@@ -1,5 +1,6 @@
 local args = require('loon.args')
 local test = require('loon')
+local snap = require('loon.snap')
 local eq = test.assert.equals
 
 local function verify(array, spec, defaults, userDefaults)
@@ -12,6 +13,8 @@ local function verify(array, spec, defaults, userDefaults)
         userDefaults = userDefaults
     })
 end
+
+snap.config(arg, {dir = 'tests/snapshots/args'})
 
 -----------------------------------------------------------------
 test.suite.start('command line arguments')
@@ -133,6 +136,39 @@ test.add('user defaults', function()
 
     eq(verify({}, spec, defaults, {}), ex, 'with empty user defaults')
     eq(verify({}, spec, defaults, userDefaults), exuser, 'with user defaults')
+end)
+
+test.suite.stop('defaults')
+test.suite.start('help')
+
+test.add('help description', function()
+    local spec = {
+        one = {options = {true, false}},
+        two = {options = {true, false}, desc = 'some description'},
+        three = {options = {4, 5}, desc = 'another description'},
+        four = {options = 'number', required = true},
+        five = {options = 'string'},
+        six = {options = {'choiceA', 'choiceB'}},
+        seven = {options = {'anotherA', 'anotherB'}, desc = 'yet another description', required = true},
+    }
+    local defaults = {
+        one = true,
+        three = 5,
+        five = 'hello',
+        six = 'choiceB',
+    }
+
+    snap.output('args help description (basic)', function()
+        args.describe(spec, defaults)
+    end)
+
+    snap.output('args help description (uncolored)', function()
+        args.describe(spec, defaults, 'uncolored')
+    end)
+
+    snap.output('args help description (title)', function()
+        args.describe(spec, defaults, false, 'A custom help title')
+    end)
 end)
 
 test.run(arg)

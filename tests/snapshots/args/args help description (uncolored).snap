@@ -1,0 +1,16 @@
+A Lua test suite written with Loon.
+
+--five   [string] no description   
+--four   [number] no description  (required) 
+--one    [flag] no description (default: on)  
+--seven  [anotherA|anotherB] yet another description (default: nil) (required) 
+--six    [choiceA|choiceB] no description (default: choiceB)  
+--three  [4|5] another description (default: 5)  
+--two    [flag] some description (default: off)  
+
+For strings, numbers or choices, supply the argument like this:
+  --name argument / --name=argument
+
+For flags, no argument is required to turn the option on.
+To turn it off, supply an option of 'false':
+  --name false / --name=false
