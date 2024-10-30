@@ -1,5 +1,5 @@
 default suite
-x flat [3 fail, 0 pass]
+not ok flat [3 fail, 0 pass]
   (1) tests/terminal-output.lua:[--]: 
   expected: {
     a = 1,
@@ -29,7 +29,7 @@ x flat [3 fail, 0 pass]
     4
   }
 
-x string [1 fail, 0 pass]
+not ok string [1 fail, 0 pass]
   (1) tests/terminal-output.lua:[--]: 
   expected: {
     a = 1,
@@ -39,7 +39,7 @@ x string [1 fail, 0 pass]
     b = "hi"
   }
 
-x nested [1 fail, 0 pass]
+not ok nested [1 fail, 0 pass]
   (1) tests/terminal-output.lua:[--]: 
   expected: {
     a = 1,

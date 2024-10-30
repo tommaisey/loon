@@ -1,5 +1,5 @@
 [34mdefault suite[0m
-[31mx[0m jabberwock
+[31mnot ok[0m jabberwock
   ([31mERROR[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: I did a boo-boo
     stack traceback:
   	loon/snap.lua:[--]: in upvalue 'yourAssert'

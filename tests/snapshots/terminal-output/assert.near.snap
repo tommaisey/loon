@@ -1,5 +1,5 @@
 [34mdefault suite[0m
-[31mx[0m near [[31m4[0m fail, [32m12[0m pass]
+[31mnot ok[0m near [[31m4[0m fail, [32m12[0m pass]
   ([31m1[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: expected: [31m7.8[0m to be nearly [35m8[0m (tolerance of [33m0.1[0m, out by [31m0.2[0m)
   ([31m2[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: expected: [31m7.8[0m to be nearly [35m8[0m (tolerance of [33m0.1[0m, out by [31m0.2[0m)
   ([31m3[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: expected: [31m8.2[0m to be nearly [35m8[0m (tolerance of [33m0.08[0m, out by [31m0.2[0m)

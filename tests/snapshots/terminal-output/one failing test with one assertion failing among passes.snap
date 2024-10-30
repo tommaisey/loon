@@ -1,5 +1,5 @@
 [34mdefault suite[0m
-[31mx[0m jabberwock [[31m1[0m fail, [32m4[0m pass]
+[31mnot ok[0m jabberwock [[31m1[0m fail, [32m4[0m pass]
   ([31m1[0m) [38;5;214mhere is the message[0m
   [36mtests/terminal-output.lua[0m:[36m[--][0m: expected: [35m99[0m, got: [31m42[0m
 --------------------------

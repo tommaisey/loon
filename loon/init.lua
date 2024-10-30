@@ -348,8 +348,8 @@ local function runTerminal(config)
     local function writeTest(name, numSuccesses, numFails, failures, errorObj)
         newlineIfNeeded()
 
-        local passTxt = '+'
-        local failTxt = 'x'
+        local passTxt = 'ok'
+        local failTxt = 'not ok'
 
         if errorObj or numFails > 0 then
             local title = fmt('%s %s', color.fail(failTxt), name)

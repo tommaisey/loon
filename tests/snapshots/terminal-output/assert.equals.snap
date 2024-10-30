@@ -1,5 +1,5 @@
 [34mdefault suite[0m
-[31mx[0m equals [[31m2[0m fail, [32m2[0m pass]
+[31mnot ok[0m equals [[31m2[0m fail, [32m2[0m pass]
   ([31m1[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: expected: [35m5[0m, got: [31m3[0m
   ([31m2[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: expected: [35m5[0m, got: [31m3[0m
 --------------------------
