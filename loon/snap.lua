@@ -258,6 +258,10 @@ end
 -- sometimes doesn't, depending on context) and replacing a given list of
 -- file names (the varargs) with '[path normalized for test]'.
 --
+-- It also normalizes some values found in error messages or stack traces,
+-- like function representations that contain hex addresses (which are
+-- unstable from run-to-run).
+--
 -- This is primarily for use in loon's own test suite, where we want to
 -- test the output of loon itself, and don't want things like line
 -- numbers or the particular top level file the tests were invoked from
@@ -279,6 +283,7 @@ function export.normalizeStack(...)
             :gsub('(:)%d+([:>])', '%1[--]%2') -- uncolored line numbers
             :gsub('(:[^m]+m)%d+([^m]+m[:>])', '%1[--]%2') -- colored line numbers
             :gsub('%./', '') -- relative path normalize
+            :gsub('function: 0x%x+', 'function: [normalized for test]') -- function representation
     end
 end
 
