@@ -320,7 +320,7 @@ end
 -- Runs the tests, outputting the results in a friendly terminal format.
 local function runTerminal(config)
     color = config.uncolored and colored.no or colored.yes
-    local terse = config.terse
+    local terse, terseSuite, terseSuiteWritten, terseAnyWritten = config.terse
 
     -- Print newlines after test failure, but not after the last test.
     local newlineNext = false
@@ -329,10 +329,12 @@ local function runTerminal(config)
     end
 
     -- Write a breadcrumb title showing the suite we're in.
-    local function writeSuiteBegin(suitePath)
-        newlineIfNeeded()
-
-        if #suitePath == 0 then
+    local function writeSuiteBegin(suitePath, override)
+        if terse and not override then
+            terseSuite = suitePath
+            terseSuiteWritten = false
+        elseif #suitePath == 0 then
+            newlineIfNeeded()
             writef('%s', color.suite('default suite'))
         else
             local title = {}
@@ -341,6 +343,7 @@ local function runTerminal(config)
                 insert(title, color.suite(suite))
             end
 
+            newlineIfNeeded()
             writef(table.concat(title, " > "))
         end
     end
@@ -352,6 +355,12 @@ local function runTerminal(config)
         local failTxt = 'not ok'
 
         if errorObj or numFails > 0 then
+            if terse and not terseSuiteWritten then
+                writeSuiteBegin(terseSuite, 'override')
+                terseSuiteWritten = true
+                terseAnyWritten = true
+            end
+
             local title = fmt('%s %s', color.fail(failTxt), name)
 
             if errorObj then
@@ -387,7 +396,9 @@ local function runTerminal(config)
     end
 
     local function writeSummary(testPasses, testFails, assertPasses, assertFails)
-        writef('--------------------------')
+        if not terse or terseAnyWritten then
+            writef('--------------------------')
+        end
 
         if testFails > 0 then
             writef(
