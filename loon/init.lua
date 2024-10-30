@@ -167,7 +167,7 @@ end
 
 local function stringContainsFailMsg(srcLocation, got, expected)
     if type(expected) ~= type(got) or type(got) ~= 'string' then
-        return srcLocation .. fmt('unable to do string assertion with: %q and %q.', expected, got)
+        return srcLocation .. fmt('unable to do string assertion with: %s and %s.', tostring(expected), tostring(got))
     end
 
     return equalsFailMsg(srcLocation, got, expected, 'string does not contain expected')
@@ -179,7 +179,7 @@ local function makeTruthTest(expectedStr)
         local expected = color.value(stringify(expectedStr))
         got = color.fail(stringify(got))
 
-        return preamble .. srcLocation .. fmt('expected: %s. got: %s', expected, got)
+        return preamble .. srcLocation .. fmt('expected: %s, got: %s', expected, got)
     end
 end
 
