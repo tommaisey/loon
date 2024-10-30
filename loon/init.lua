@@ -48,6 +48,9 @@ local color = colored.yes
 
 -----------------------------------------------------------------------------
 -- Internal helper functions.
+local function nothing(...)
+    return ...
+end
 local function writef(fstring, ...)
     iowrite(fmt(fstring, ...), '\n')
 end
@@ -55,12 +58,16 @@ local function newline()
     iowrite('\n')
 end
 
-local function stringify(x)
-    if type(x) == 'table' then
-        return serpent.block(x, {comment = false})
+-- Converts any value into a string for showing in a failed test, with an optional color.
+local function stringify(x, col)
+    col = col or nothing
+    local tp = type(x)
+
+    if tp == 'table' then
+        return col(serpent.block(x, {comment = false}))
     end
 
-    return tostring(x)
+    return tp == 'string' and fmt('"%s"', col(x)) or col(tostring(x))
 end
 
 local function normalizeRelativePath(str)
@@ -113,11 +120,14 @@ local function deepEquals(a, b)
     return a == b
 end
 
+local function preambleMsg(text)
+    return text and fmt("%s\n", color.msg(text)) or ''
+end
+
 local function equalsFailMsg(srcLocation, got, expected, text)
-    local preamble = text and fmt("%s\n", color.msg(text)) or ''
     local comparison
-    expected = color.value(stringify(expected))
-    got = color.fail(stringify(got))
+    expected = stringify(expected, color.value)
+    got = stringify(got, color.fail)
 
     if expected:find('\n') or got:find('\n') then
         comparison = fmt('\nexpected: %s, got: %s', expected, got)
@@ -127,7 +137,7 @@ local function equalsFailMsg(srcLocation, got, expected, text)
         comparison = fmt('expected: \n%s.\ngot: \n%s', expected, got)
     end
 
-    return preamble .. srcLocation .. comparison
+    return preambleMsg(text) .. srcLocation .. comparison
 end
 
 local function nearlyEquals(a, b, tolerance)
@@ -135,26 +145,14 @@ local function nearlyEquals(a, b, tolerance)
 end
 
 local function nearlyEqualsFailMsg(srcLocation, got, expected, tolerance, text)
-    local preamble = text and fmt("%s\n", color.msg(text)) or ''
-    local outby = color.fail(stringify(math.abs(expected - got)))
-    expected = color.value(stringify(expected))
-    got = color.fail(stringify(got))
-    tolerance = color.warn(stringify(tolerance or 1e-10))
+    local outby = stringify(math.abs(expected - got), color.fail)
+    expected = stringify(expected, color.value)
+    got = stringify(got, color.fail)
+    tolerance = stringify(tolerance or 1e-10, color.warn)
 
     local comparison = fmt('expected: %s to be nearly %s (tolerance of %s, out by %s)', got, expected, tolerance, outby)
 
-    return preamble .. srcLocation .. comparison
-end
-
-local function errorContains(errorMessage, errorFunction)
-    local success, message = pcall(errorFunction)
-    return not success and type(message) == 'string' and message:find(errorMessage)
-end
-
-local function errorFailMsg(srcLocation, expectedError, errorFunction)
-    local _, message = pcall(errorFunction)
-
-    return equalsFailMsg(srcLocation, message, expectedError, 'error not thrown as expected')
+    return preambleMsg(text) .. srcLocation .. comparison
 end
 
 local function stringContains(got, expected)
@@ -165,19 +163,42 @@ local function stringContains(got, expected)
     return got:find(expected)
 end
 
-local function stringContainsFailMsg(srcLocation, got, expected)
-    if type(expected) ~= type(got) or type(got) ~= 'string' then
-        return srcLocation .. fmt('unable to do string assertion with: %s and %s.', tostring(expected), tostring(got))
+local function stringContainsFailMsg(srcLocation, got, expected, text)
+    local exType = type(expected)
+    local gotType = type(got)
+
+    if exType ~= gotType or gotType ~= 'string' then
+        local gotS = stringify(got, gotType == 'string' and color.pass or color.fail)
+        local expectedS = stringify(expected, exType == 'string' and color.pass or color.fail)
+        local preamble = preambleMsg('string.contains: type error')
+        return preamble .. srcLocation .. fmt('with %s and %s', expectedS, gotS)
     end
 
-    return equalsFailMsg(srcLocation, got, expected, 'string does not contain expected')
+    local expectedS = stringify(expected, color.value)
+    local gotS = stringify(got, color.fail)
+    local newline1 = (#expected > 80 or expected:find('\n')) and '\n' or ''
+    local newline2 = (#got > 80 or got:find('\n')) and '\n' or ', '
+    local comparison = fmt('%smatching: %s%sagainst: %s', newline1, expectedS, newline2, gotS)
+    text = text or 'string.contains: no match'
+    return preambleMsg(text) .. srcLocation .. comparison
+end
+
+local function errorContains(errorMessage, errorFunction)
+    local success, message = pcall(errorFunction)
+    return not success and type(message) == 'string' and message:find(errorMessage)
+end
+
+local function errorFailMsg(srcLocation, expectedError, errorFunction)
+    local _, message = pcall(errorFunction)
+
+    return stringContainsFailMsg(srcLocation, message, expectedError, 'error.contains: no match')
 end
 
 local function makeTruthTest(expectedStr)
     return function (srcLocation, got, text)
         local preamble = text and fmt("%s\n", color.msg(text)) or ''
-        local expected = color.value(stringify(expectedStr))
-        got = color.fail(stringify(got))
+        local expected = stringify(expectedStr, color.value)
+        got = stringify(got, color.fail)
 
         return preamble .. srcLocation .. fmt('expected: %s, got: %s', expected, got)
     end
@@ -327,8 +348,11 @@ local function runTerminal(config)
     local function writeTest(name, numSuccesses, numFails, failures, errorObj)
         newlineIfNeeded()
 
+        local passTxt = '+'
+        local failTxt = 'x'
+
         if errorObj or numFails > 0 then
-            local title = fmt('%s %s', color.fail('x'), name)
+            local title = fmt('%s %s', color.fail(failTxt), name)
 
             if errorObj then
                 writef(title)
@@ -358,7 +382,7 @@ local function runTerminal(config)
             local summary = asserts.successes > 0
                 and color.pass(asserts.successes) .. ' pass'
                 or  color.warn('no assertions')
-            writef('%s %s [%s]', color.pass('+'), name, summary)
+            writef('%s %s [%s]', color.pass(passTxt), name, summary)
         end
     end
 

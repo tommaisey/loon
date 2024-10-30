@@ -195,6 +195,8 @@ test.add('assertions', function()
             loon.assert.string.contains('To err is human, but it feels divine', 'human')
             loon.assert.string.contains('To err is human, but it feels divine', '[Hh]uman')
             loon.assert.string.contains('To err is human, but it feels divine', 'godly')
+            loon.assert.string.contains(function() end, 'human')
+            loon.assert.string.contains('human', {})
         end)
 
         loon.run()

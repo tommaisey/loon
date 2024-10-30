@@ -1,10 +1,11 @@
 [34mdefault suite[0m
-[31mx[0m string.contains [[31m1[0m fail, [32m2[0m pass]
-  ([31m1[0m) [38;5;214mstring does not contain expected[0m
-  [36mtests/terminal-output.lua[0m:[36m[--][0m: expected: 
-  [35mgodly[0m.
-  got: 
-  [31mTo err is human, but it feels divine[0m
+[31mx[0m string.contains [[31m3[0m fail, [32m2[0m pass]
+  ([31m1[0m) [38;5;214mstring.contains: no match[0m
+  [36mtests/terminal-output.lua[0m:[36m[--][0m: matching: "[35mgodly[0m", against: "[31mTo err is human, but it feels divine[0m"
+  ([31m2[0m) [38;5;214mstring.contains: type error[0m
+  [36mtests/terminal-output.lua[0m:[36m[--][0m: with "[32mhuman[0m" and [31mfunction: 0x600002d144a0[0m
+  ([31m3[0m) [38;5;214mstring.contains: type error[0m
+  [36mtests/terminal-output.lua[0m:[36m[--][0m: with [31m{}[0m and "[32mhuman[0m"
 --------------------------
 [32mpass[0m: [32m0[0m tests, [32m2[0m assertions
-[31mfail[0m: [31m1[0m tests, [31m1[0m assertions
+[31mfail[0m: [31m1[0m tests, [31m3[0m assertions
