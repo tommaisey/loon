@@ -11,7 +11,7 @@
 -- that contain line-numbers since they will have moved.
 local snap = require('loon.snap')
 local test = require('loon') -- copy that runs these tests
-local loon = assert(loadfile('loon/init.lua'))() -- copy that runs tests to generate snapshots
+local loon = assert(loadfile('loon/loon.lua'))() -- copy that runs tests to generate snapshots
 local eq = loon.assert.equals
 local junit = {output = 'junit', times = false} -- config for junit output
 

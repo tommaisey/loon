@@ -3,12 +3,12 @@
   ([31mERROR[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: I did a boo-boo
     stack traceback:
   	loon/snap.lua:[--]: in upvalue 'yourAssert'
-  	loon/init.lua:[--]: in function 'loon.snap.output'
+  	loon/loon.lua:[--]: in function 'loon.snap.output'
   	tests/terminal-output.lua:[--]: in function <tests/terminal-output.lua:[--]>
   	[C]: in function 'xpcall'
-  	loon/init.lua:[--]: in function <loon/init.lua:[--]>
+  	loon/loon.lua:[--]: in function <loon/loon.lua:[--]>
   	(...tail calls...)
-  	loon/init.lua:[--]: in function 'loon.run'
+  	loon/loon.lua:[--]: in function 'loon.run'
   	tests/[[path normalized for test]]
   	[C]: in ?
 --------------------------
