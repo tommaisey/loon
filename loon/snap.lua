@@ -92,13 +92,23 @@ end
 
 local function compareVsOutput(name, testFn, transformer)
     local path = os.tmpname()
+    local outputPrev = io.output()
     local output = assert(io.open(path, 'w+'), "test runner couldn't open temporary file")
     io.output(output)
 
-    testFn()
+    local success, msg = pcall(testFn) -- pcall to make sure we don't bork io.output()
 
-    io.output(io.stdout)
+    io.output(outputPrev)
     output:close()
+
+    if not success then
+        local actual = fmt('ERROR: %s\n', msg)
+        kind[name] = 'fail'
+        insert(fail, {name = name, path = path, actual = actual})
+        insert(ordered, {result = 'fail', name = name, path = path, actual = actual})
+        return false
+    end
+
     output = io.open(path, 'r')
     local actual = output:read('a')
     output:close()
