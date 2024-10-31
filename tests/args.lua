@@ -2,15 +2,17 @@ local args = require('loon.args')
 local test = require('loon')
 local snap = require('loon.snap')
 local eq = test.assert.equals
+local err = test.assert.error.contains
 
-local function verify(array, spec, defaults, userDefaults)
+local function verify(array, spec, defaults, userDefaults, abbreviations)
     array[-1] = 'lua'
     array[0] = 'my-script-name.lua'
     return args.verify({
         config = array,
         spec = spec,
         defaults = defaults,
-        userDefaults = userDefaults
+        userDefaults = userDefaults,
+        abbreviations = abbreviations
     })
 end
 
@@ -73,6 +75,9 @@ test.add('booleans supplied with = syntax', function()
     eq(verify({'--one', '--two', '--three', 'false'}, spec), {one = true, two = true, three = false})
     eq(verify({'--one=false', '--two=false', '--three', 'false'}, spec), {one = false, two = false, three = false})
     eq(verify({'--one="false"', '--three', '"false"'}, spec), {one = false, three = false})
+
+    eq(verify({'--one=on', '--two=off', '--three', 'off'}, spec), {one = true, two = false, three = false})
+    eq(verify({'--one=no', '--two=yes', '--three', 'yes'}, spec), {one = false, two = true, three = true})
 end)
 
 test.add('values supplied as number', function()
@@ -86,6 +91,8 @@ test.add('values supplied as number', function()
 
     eq(verify({'--one', '--three=4', '--two'}, spec), ex4)
     eq(verify({'--one', '--three', '4', '--two'}, spec), ex4)
+    eq(verify({'--one', '--three', '"4"', '--two'}, spec), ex4)
+    eq(verify({'--one', '--three', "'4'", '--two'}, spec), ex4)
     eq(verify({'--one', '--three=5', '--two'}, spec), ex5)
     eq(verify({'--one', '--three="4"', '--two'}, spec), ex4)
     eq(verify({'--one', '--three="5"', '--two'}, spec), ex5)
@@ -94,6 +101,45 @@ test.add('values supplied as number', function()
 end)
 
 test.suite.stop('parsing')
+test.suite.start('verification')
+
+test.add('types and options', function()
+    local spec = {
+        one = {options = {true, false}},
+        two = {options = {'hi', 'bye'}},
+        three = {options = {4, 5}},
+        four = {options = 'number'}
+    }
+
+    err("%-%-one was 'hello' but should be 'true/on/yes' or 'false/no/off'", function()
+        verify({'--one', 'hello'}, spec)
+    end)
+
+    err("%-%-two was 'fi' but should be one of: hi, bye", function()
+        verify({'--two', 'fi'}, spec)
+    end)
+
+    err("'bye' cannot be parsed as a flag or option", function()
+        verify({'--two', 'hi', 'bye'}, spec)
+    end)
+
+    err("%-%-three was 'yo' but should be one of: 4, 5.", function()
+        verify({'--three', 'yo'}, spec)
+    end)
+
+    err("%-%-four has type 'string' %(yo%) but it should be a 'number'", function()
+        verify({'--four', 'yo'}, spec)
+    end)
+
+    err("'%-%-two=' is a malformed argument with '=' syntax", function()
+        verify({'--two=', 'yo'}, spec)
+    end)
+    err("'%-%-=yo' is a malformed argument with '=' syntax", function()
+        verify({'--=yo'}, spec)
+    end)
+end)
+
+test.suite.stop('verification')
 test.suite.start('defaults')
 
 test.add('system defaults', function()
@@ -138,6 +184,38 @@ test.add('user defaults', function()
 end)
 
 test.suite.stop('defaults')
+test.suite.start('abbreviations')
+
+test.add('single letter', function()
+    local spec = {
+        argA = {options = {true, false}},
+        argX = {options = {true, false}},
+        argB = {options = {4, 5}},
+    }
+    local abbreviations = {
+        a = 'argA',
+        b = 'argB',
+    }
+
+    eq(verify({'-a'}, spec, nil, nil, abbreviations), {argA = true}, 'with single flag')
+    eq(verify({'-b', '5'}, spec, nil, nil, abbreviations), {argB = 5}, 'with single argument')
+    eq(verify({'-a', '-b', '5'}, spec, nil, nil, abbreviations), {argA = true, argB = 5}, 'with argument and flag (1)')
+    eq(verify({'-b', '5', '-a'}, spec, nil, nil, abbreviations), {argA = true, argB = 5}, 'with argument and flag (2)')
+
+    err("'%-k' is an unrecognized argument", function()
+        verify({'-k'}, spec, nil, nil, abbreviations)
+    end)
+
+    err("'%--k' is an unrecognized argument. Did you mean %-k?", function()
+        verify({'--k'}, spec, nil, nil, abbreviations)
+    end)
+
+    err("--argB was '7' but should be one of: 4, 5", function()
+        verify({'-b', '7', '-a'}, spec, nil, nil, abbreviations)
+    end)
+end)
+
+test.suite.stop('abbreviations')
 test.suite.start('help')
 
 test.add('help description', function()
@@ -158,15 +236,25 @@ test.add('help description', function()
     }
 
     snap.output('args help description (basic)', function()
-        args.describe(spec, defaults)
+        args.describe({spec = spec, defaults = defaults})
     end)
 
     snap.output('args help description (uncolored)', function()
-        args.describe(spec, defaults, nil, 'uncolored')
+        args.describe({spec = spec, defaults = defaults, uncolored = true})
     end)
 
     snap.output('args help description (title)', function()
-        args.describe(spec, defaults, nil, false, 'A custom help title')
+        args.describe({spec = spec, defaults = defaults, helpTitle = 'A custom help title'})
+    end)
+
+    snap.output('args help abbreviations', function()
+        local abbrevs = {
+            a = 'three',
+            b = 'five',
+            c = 'six'
+        }
+
+        args.describe({spec = spec, defaults = defaults, abbreviations = abbrevs})
     end)
 end)
 

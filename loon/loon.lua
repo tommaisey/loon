@@ -189,26 +189,32 @@ local function stringContains(got, expected)
 end
 
 local function stringContainsFailMsg(srcLocation, got, expected, text)
-    local exType = type(expected)
-    local gotType = type(got)
+    local typeExp, typeGot = type(expected), type(got)
+    local preamble, body
 
-    if exType ~= gotType or gotType ~= 'string' then
-        local gotS = stringify(got, gotType == 'string' and color.pass or color.fail)
-        local expectedS = stringify(expected, exType == 'string' and color.pass or color.fail)
-        local preamble = preambleMsg('string.contains: type error')
-        return preamble .. srcLocation .. fmt('with %s and %s', expectedS, gotS)
+    if typeExp ~= typeGot or typeGot ~= 'string' then
+        local gotS = stringify(got, typeGot == 'string' and color.pass or color.fail)
+        local expectedS = stringify(expected, typeExp == 'string' and color.pass or color.fail)
+        preamble = preambleMsg(text or 'string.contains: type error')
+        body = fmt('expected two strings, got: %s and: %s', gotS, expectedS)
+    else
+        local expectedS = stringify(expected, color.value)
+        local gotS = stringify(got, color.fail)
+        local newline1 = (#expected > 80 or expected:find('\n')) and '\n' or ''
+        local newline2 = (#got > 80 or got:find('\n')) and '\n' or ', '
+        preamble = preambleMsg(text or 'string.contains: no match')
+        body = fmt('%smatching: %s%sagainst: %s', newline1, expectedS, newline2, gotS)
     end
 
-    local expectedS = stringify(expected, color.value)
-    local gotS = stringify(got, color.fail)
-    local newline1 = (#expected > 80 or expected:find('\n')) and '\n' or ''
-    local newline2 = (#got > 80 or got:find('\n')) and '\n' or ', '
-    local comparison = fmt('%smatching: %s%sagainst: %s', newline1, expectedS, newline2, gotS)
-    text = text or 'string.contains: no match'
-    return preambleMsg(text) .. srcLocation .. comparison
+    return preamble .. srcLocation .. body
 end
 
 local function errorContains(errorMessage, errorFunction)
+    -- Don't allow matches against an empty expected string (which always succeeds).
+    if errorMessage == '' then
+        return false
+    end
+
     local success, message = pcall(errorFunction)
     return not success and type(message) == 'string' and message:find(errorMessage)
 end

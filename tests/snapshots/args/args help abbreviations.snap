@@ -1,0 +1,16 @@
+A Lua test suite written with Loon.
+
+--[38;5;214mfive[0m|-[38;5;214mb[0m   [[36mstring[0m] no description   
+--[38;5;214mfour[0m      [[36mnumber[0m] no description  (required) 
+--[38;5;214mone[0m       [[37mflag[0m] no description (default: [33mon[0m)  
+--[38;5;214mseven[0m     [[32manotherA[0m|[32manotherB[0m] yet another description (default: [33mnil[0m) (required) 
+--[38;5;214msix[0m|-[38;5;214mc[0m    [[32mchoiceA[0m|[32mchoiceB[0m] no description (default: [33mchoiceB[0m)  
+--[38;5;214mthree[0m|-[38;5;214ma[0m  [[32m4[0m|[32m5[0m] another description (default: [33m5[0m)  
+--[38;5;214mtwo[0m       [[37mflag[0m] some description (default: [33moff[0m)  
+[37m
+For strings, numbers or choices, supply the argument like this:[0m
+  --name argument / --name=argument
+[37m
+For flags, no argument is required to turn the option on.[0m[37m
+To turn it off, supply an option of 'false':[0m
+  --name false / --name=false

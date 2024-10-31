@@ -1,3 +1,4 @@
+--------------------------------------------------------------------------------------
 -- A library to assist verifying config tables and argument lists.
 -- In our model, configuration can be done either way, with
 -- loon.run(arg) or loon.run({stuff = true}), so we must
@@ -5,6 +6,7 @@
 -- verify the table against a spec.
 --
 -- The spec is a table of keys to arrays of 'allowed' values.
+--------------------------------------------------------------------------------------
 local export = {}
 local fmt = string.format
 local insert = table.insert
@@ -84,7 +86,7 @@ local function consumeArg(name, raw, specs, config, convertedConfig, idx, ignore
         name, value = name:match('([^=]+)=([^=]+)')
 
         if not name or not value or #name == 0 or #value == 0 then
-            error("malformed argument with '=' syntax: '" .. name .. "'")
+            error(fmt("'%s' is a malformed argument with '=' syntax: no value", raw))
         end
 
         idx = idx + 1
@@ -105,9 +107,9 @@ local function consumeArg(name, raw, specs, config, convertedConfig, idx, ignore
     if spec == nil then
         if not ignoreUnrecognized then
             if #name == 1 and raw:match('^%-%-') then
-                error(fmt("unrecognized argument: %s. Did you mean -%s?", raw, name))
+                error(fmt("'%s' is an unrecognized argument. Did you mean -%s?", raw, name))
             else
-                error("unrecognized argument: " .. raw)
+                error(fmt("'%s' is an unrecognized argument", raw))
             end
         end
     else
@@ -115,20 +117,21 @@ local function consumeArg(name, raw, specs, config, convertedConfig, idx, ignore
             value = value:match('["\']?([^"\']+)')
         end
 
-        local options = assert(spec.options, 'spec item lacks options array')
+        local options = assert(spec.options, 'spec item lacks options array or type string')
 
         if ofType(options, 'boolean') then
             if value == nil then
                 value = assert(isBooleanSwitch) -- true
             else
-                value = booleanConversions[value]
+                local rawValue = value
+                value = booleanConversions[rawValue]
 
                 if value == nil then
-                    error(fmt("expected 'true/on/yes' or 'false/no/off' value for '%s', got: '%s'", name, value))
+                    error(fmt("%s was '%s' but should be 'true/on/yes' or 'false/no/off'", raw, rawValue))
                 end
             end
         elseif ofType(options, 'number') then
-            value = assert(tonumber(value), "couldn't convert argument to a number: " .. value)
+            value = tonumber(value) or value -- verifyWithSpec will take care of the error message later
         end
 
         convertedConfig[name] = value
@@ -158,7 +161,11 @@ local function convertIfArgs(config, specs, abbreviations, ignoreUnrecognized)
         if name then
             idx = consumeArg(name, item, specs, config, convertedConfig, idx, ignoreUnrecognized)
         else
-            local flags = assert(item:match('^%-(.+)$'), 'cannot parse as a flag or option: ' .. item)
+            local flags = item:match('^%-(.+)$')
+
+            if not flags then
+                error(fmt("'%s' cannot be parsed as a flag or option", item))
+            end
 
             if #flags == 1 then
                 name = abbreviations[flags] or flags
@@ -184,11 +191,11 @@ local function verifyWithSpec(config, specs)
                 local t = type(element)
                 if t ~= options then
                     local str = tostring(element)
-                    error(fmt("config element '%s' should have type '%s' but is '%s', %s"), k, options, t, str)
+                    error(fmt("--%s has type '%s' (%s) but it should be a '%s'", k, t, str, options))
                 end
             elseif not contains(options, element) then
                 local possible = arrayToString(options)
-                error(fmt("config element '%s' should be one of: %s.\ngot: %q", k, possible, tostring(element)))
+                error(fmt("--%s was '%s' but should be one of: %s.", k, tostring(element), possible))
             end
         end
     end

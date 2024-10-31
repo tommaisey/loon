@@ -101,17 +101,14 @@ local function compareVsOutput(name, testFn, transformer)
     local output = assert(io.open(path, 'w+'), "test runner couldn't open temporary file")
     io.output(output)
 
-    local success, msg = pcall(testFn) -- pcall to make sure we don't bork io.output()
+    local success, msg = pcall(testFn)
 
     io.output(outputPrev)
     output:close()
 
     if not success then
-        local actual = fmt('ERROR: %s\n', msg)
-        kind[name] = 'fail'
-        insert(fail, {name = name, path = path, actual = actual})
-        insert(ordered, {result = 'fail', name = name, path = path, actual = actual})
-        return false
+        -- throw error up to containing test
+        error(msg)
     end
 
     output = io.open(path, 'r')
@@ -246,6 +243,7 @@ function export.config(configOrArgs, configDefaults)
         config = configOrArgs,
         spec = argsBase,
         defaults = argsBaseDefaults,
+        abbreviations = argsBaseAbbreviations,
         userDefaults = configDefaults,
         ignoreUnrecognized = true
     })
