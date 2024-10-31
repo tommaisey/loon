@@ -2,6 +2,7 @@
 [31mnot ok[0m jabberwock
   ([31mERROR[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: I did a boo-boo
     stack traceback:
+  	[C]: in function 'pcall'
   	loon/snap.lua:[--]: in upvalue 'yourAssert'
   	loon/loon.lua:[--]: in function 'loon.snap.output'
   	tests/terminal-output.lua:[--]: in function <tests/terminal-output.lua:[--]>

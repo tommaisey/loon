@@ -47,8 +47,8 @@ end
 
 local function reverseKeyValue(tbl)
     local new = {}
-    for abbrev, fullName in pairs(tbl) do
-        new[fullName] = abbrev
+    for key, value in pairs(tbl) do
+        new[value] = key
     end
     return new
 end
@@ -252,6 +252,7 @@ function export.describe(def)
 
     iowrite(helpTitle, '\n\n')
     local spaced = {}
+    local max = 0
 
     for _, elem in ipairs(ordered) do
         local name = elem[1]
@@ -277,13 +278,8 @@ function export.describe(def)
             defaultS = fmt('(default: %s)', color.yellow(default))
         end
 
+        max = math.max(max, len)
         table.insert(spaced, {len = len, nameS, optionsS, descS, defaultS, requiredS, '\n'})
-    end
-
-    local max = 0
-
-    for _, elem in ipairs(spaced) do
-        max = math.max(max, elem.len)
     end
 
     for _, elem in ipairs(spaced) do

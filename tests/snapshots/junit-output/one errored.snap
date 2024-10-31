@@ -6,6 +6,7 @@
     <testcase name="jabberwock" classname="default" assertions="0">
       <error message="tests/junit-output.lua:[--]: I did a boo-boo">
         <![CDATA[stack traceback:
+	[C]: in function 'pcall'
 	loon/snap.lua:[--]: in upvalue 'yourAssert'
 	loon/loon.lua:[--]: in function 'loon.snap.output'
 	tests/junit-output.lua:[--]: in function <tests/junit-output.lua:[--]>
