@@ -1,0 +1,65 @@
+default suite
+not ok flat [3 fail, 0 pass]
+  (1) tests/terminal-output.lua:[--]: 
+  expected: {
+    a = 1,
+    b = 3
+  }, got: {
+    a = 1,
+    b = 2
+  }
+  (2) tests/terminal-output.lua:[--]: 
+  expected: {
+    a = 1,
+    c = 2
+  }, got: {
+    a = 1,
+    b = 2
+  }
+  (3) tests/terminal-output.lua:[--]: 
+  expected: {
+    1,
+    2,
+    4,
+    5
+  }, got: {
+    1,
+    2,
+    3,
+    4
+  }
+
+not ok string [1 fail, 0 pass]
+  (1) tests/terminal-output.lua:[--]: 
+  expected: {
+    a = 1,
+    b = "byes"
+  }, got: {
+    a = 1,
+    b = "hi"
+  }
+
+not ok nested [1 fail, 0 pass]
+  (1) tests/terminal-output.lua:[--]: 
+  expected: {
+    a = 1,
+    b = {
+      c = 2,
+      d = {
+        e = 7
+      },
+      f = "hi"
+    }
+  }, got: {
+    a = 1,
+    b = {
+      c = 2,
+      d = {
+        e = 3
+      },
+      f = "hi"
+    }
+  }
+--------------------------
+pass: 0 tests, 0 assertions
+fail: 3 tests, 5 assertions

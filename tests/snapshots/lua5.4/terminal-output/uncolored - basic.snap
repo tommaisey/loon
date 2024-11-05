@@ -1,0 +1,9 @@
+default suite
+ok jabberwock [1 pass]
+not ok slithy [1 fail, 0 pass]
+  (1) tests/terminal-output.lua:[--]: expected: 5, got: 3
+
+ok mimsy [1 pass]
+--------------------------
+pass: 2 tests, 2 assertions
+fail: 1 tests, 1 assertions

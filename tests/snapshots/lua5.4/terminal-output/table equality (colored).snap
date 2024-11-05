@@ -1,0 +1,13 @@
+[34mdefault suite[0m
+[31mnot ok[0m flat [[31m1[0m fail, [32m0[0m pass]
+  ([31m1[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: 
+  expected: [35m{
+    a = 1,
+    b = 3
+  }[0m, got: [31m{
+    a = 1,
+    b = 2
+  }[0m
+--------------------------
+[32mpass[0m: [32m0[0m tests, [32m0[0m assertions
+[31mfail[0m: [31m1[0m tests, [31m1[0m assertions

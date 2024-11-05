@@ -10,12 +10,19 @@
 -- add a test anywhere except the top, you will have to re-approve tests
 -- that contain line-numbers since they will have moved.
 local snap = require('loon.snap')
+local util = require('loon.util')
+
 local test = require('loon') -- copy that runs these tests
 local loon = assert(loadfile('loon/loon.lua'))() -- copy that runs tests to generate snapshots
 local eq = loon.assert.equals
 local junit = {output = 'junit', times = false} -- config for junit output
 
-snap.config(arg, {dir = "tests/snapshots/junit-output"})
+
+snap.config(arg, {
+    dir = util.luaversion == 54
+        and "tests/snapshots/lua5.4/junit-output"
+        or  "tests/snapshots/lua5.1/junit-output"
+})
 
 -- This prevents line numbers and/or irrelevant stack information from
 -- causing our tests to fail just because the line number or method of

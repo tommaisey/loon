@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites tests="1" failures="1" errors="1" assertions="0" skipped="0">
+  <testsuite name="default">
+    <properties><property name="Lua Version" value="Lua 5.1" /></properties>
+    <testcase name="jabberwock" classname="default" assertions="0">
+      <error message="tests/junit-output.lua:[--]: I did a boo-boo">
+        <![CDATA[
+stack traceback:
+	tests/junit-output.lua:[--]: in function <tests/junit-output.lua:[--]>
+	[C]: in function 'pcall'
+	loon/snap.lua:[--]: in function 'yourAssert'
+	loon/loon.lua:[--]: in function 'output'
+	tests/junit-output.lua:[--]: in function <tests/junit-output.lua:[--]>
+	[C]: in function 'xpcall'
+	loon/loon.lua:[--]: in function <loon/loon.lua:[--]>
+	(tail call): ?
+	loon/loon.lua:[--]: in function 'run'
+	tests/[[path normalized for test]]
+	[C]: ?]]>
+      </error>
+    </testcase>
+  </testsuite>
+</testsuites>

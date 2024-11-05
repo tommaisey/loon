@@ -1,0 +1,19 @@
+[34mdefault suite[0m
+[31mnot ok[0m jabberwock
+  ([31mERROR[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: I did a boo-boo
+    
+  stack traceback:
+  	tests/terminal-output.lua:[--]: in function <tests/terminal-output.lua:[--]>
+  	[C]: in function 'pcall'
+  	loon/snap.lua:[--]: in function 'yourAssert'
+  	loon/loon.lua:[--]: in function 'output'
+  	tests/terminal-output.lua:[--]: in function <tests/terminal-output.lua:[--]>
+  	[C]: in function 'xpcall'
+  	loon/loon.lua:[--]: in function <loon/loon.lua:[--]>
+  	(tail call): ?
+  	loon/loon.lua:[--]: in function 'run'
+  	tests/[[path normalized for test]]
+  	[C]: ?
+--------------------------
+[32mpass[0m: [32m0[0m tests, [32m0[0m assertions
+[31mfail[0m: [31m1[0m tests, [31m0[0m assertions

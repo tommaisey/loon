@@ -71,7 +71,7 @@ local function isArgsList(config)
 
         if element == nil then
             return false
-        elseif type(element) == 'string' and element:find('[Llua]') then
+        elseif type(element) == 'string' and element:find('^[Llua]') then
             return true
         end
 

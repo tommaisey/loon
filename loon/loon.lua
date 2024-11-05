@@ -14,6 +14,7 @@ local export = {
 local serpent = require('loon.serpent')
 local colored = require('loon.color')
 local args = require('loon.args')
+local util = require('loon.util')
 
 -----------------------------------------------------------------------------
 -- Describes each argument and the possible values it can have.
@@ -309,7 +310,8 @@ local function runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
 
         local noError, errorObj = xpcall(fn, function(errorMsg)
             local norm = normalizeRelativePath
-            return {msg = norm(errorMsg), trace = norm(debug.traceback(nil, 8))}
+            local traceback = util.luaversion > 52 and debug.traceback(nil, 8) or debug.traceback("", 8)
+            return {msg = norm(errorMsg or 'error'), trace = norm(traceback or '')}
         end)
 
         pluginCustomData = nil
@@ -400,7 +402,7 @@ local function runTerminal(config)
 
             if errorObj then
                 writef(title)
-                local errorMsg = assert(errorObj.msg)
+                local errorMsg = assert(errorObj.msg, errorObj)
                 local file, line, rest = errorMsg:match('([^:]+):(%d+):(.*)')
                 local intro = fmt('  (%s)', color.fail('ERROR'))
 
@@ -609,8 +611,12 @@ function export.grouped(...)
     export.run = resetSuite
 
     for _, requireStyleString in ipairs({...}) do
-        local file = package.searchpath(requireStyleString, package.path)
-        assert(loadfile(file))()
+        if package.searchpath then -- Lua 5.4
+            local file = package.searchpath(requireStyleString, package.path)
+            assert(loadfile(file))()
+        else -- Lua 5.1
+            require(requireStyleString)
+        end
     end
 
     export.run = run

@@ -2,6 +2,7 @@ local loon = require('loon')
 local export = {}
 
 local args = require('loon.args')
+local util = require('loon.util')
 local colored = require('loon.color')
 local color = colored.yes
 -----------------------------------------------------------------------------
@@ -24,6 +25,8 @@ local argsBaseAbbreviations = {
 local fmt = string.format
 local insert = table.insert
 local iowrite = io.write
+local readAllFlag = util.luaversion > 52 and 'a' or '*a'
+local readLineFlag = util.luaversion > 52 and 'l' or '*l'
 
 local function writef(fstring, ...)
     iowrite(fmt(fstring, ...), '\n')
@@ -39,7 +42,7 @@ local function diff(actual, expectedPath)
     file:close()
 
     local diffHandle = io.popen(fmt('git diff "%s" "%s"', expectedPath, tmpPath))
-    local text = assert(diffHandle, 'Could not run diff program'):read('a')
+    local text = assert(diffHandle, 'Could not run diff program'):read(readAllFlag)
     diffHandle:close()
     os.remove(tmpPath)
     return text
@@ -79,7 +82,7 @@ local function compareVsFile(name, actual, transformer)
         return false
     end
 
-    local saved = file:read('a')
+    local saved = file:read(readAllFlag)
     file:close()
 
     if saved == actual then
@@ -112,7 +115,7 @@ local function compareVsOutput(name, testFn, transformer)
     end
 
     output = io.open(path, 'r')
-    local actual = output:read('a')
+    local actual = output:read(readAllFlag)
     output:close()
     os.remove(path)
 
@@ -155,7 +158,7 @@ local function runUpdate()
             )
         end
 
-        local answer = io.stdin:read('l')
+        local answer = io.stdin:read(readLineFlag)
 
         if not answer or answer:find('[nN]') then
             writef('ok then, exiting...')
@@ -189,7 +192,7 @@ local function runUpdate()
             color.file(elem.name), yes, no
         )
 
-        if not confirmAndWrite(io.stdin:read('l'), elem.path, elem.actual) then
+        if not confirmAndWrite(io.stdin:read(readLineFlag), elem.path, elem.actual) then
             return 1
         end
     end
@@ -201,7 +204,7 @@ local function runUpdate()
             diff(elem.actual, elem.path), color.file(elem.name), yes, no
         )
 
-        if not confirmAndWrite(io.stdin:read('l'), elem.path, elem.actual) then
+        if not confirmAndWrite(io.stdin:read(readLineFlag), elem.path, elem.actual) then
             return 1
         end
     end

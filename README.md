@@ -9,6 +9,7 @@
 - Beautiful output
 - Assertion failures don't halt tests
 - Snapshot testing facility
+- Support for Lua 5.4 and 5.1 (for LuaJIT)
 
 There are of course several other Lua test libraries, I simply wanted one with this
 set of goals and trade-offs, and couldn't find exactly what I was looking for. 

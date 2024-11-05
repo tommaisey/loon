@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites tests="4" failures="1" errors="0" assertions="5" skipped="0">
+  <testsuite name="suite 1">
+    <properties><property name="Lua Version" value="Lua 5.1" /></properties>
+    <testcase name="jabberwock" classname="suite 1" assertions="1" />
+    <testcase name="brillig" classname="suite 1" assertions="2" />
+  </testsuite>
+  <testsuite name="suite 2">
+    <properties><property name="Lua Version" value="Lua 5.1" /></properties>
+    <testcase name="slithy" classname="suite 2" assertions="1">
+      <failure message="tests/junit-output.lua:[--]: expected: 5, got: 3"></failure>
+    </testcase>
+    <testcase name="mimsy" classname="suite 2" assertions="1" />
+  </testsuite>
+</testsuites>
