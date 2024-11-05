@@ -1,5 +1,7 @@
 # loon
 
+![test-all](https://github.com/tommaisey/loon/actions/workflows/test.yml/badge.svg)
+
 `loon` is a test library for the Lua programming language, with the following goals:
 
 - Small (~1000 lines of Lua without comments)
@@ -12,7 +14,7 @@
 - Support for Lua 5.4 and 5.1 (for LuaJIT)
 
 There are of course several other Lua test libraries, I simply wanted one with this
-set of goals and trade-offs, and couldn't find exactly what I was looking for. 
+set of goals and trade-offs, and couldn't find exactly what I was looking for.
 
 Here's an example of the output you get when running `loon` tests from the terminal:
 
