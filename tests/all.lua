@@ -8,4 +8,4 @@ test.grouped(
 )
 
 -- The description only turns up when running with the --help flag
-test.run(arg, {helpTitle = "Loon's own test suite."})
+os.exit(test.run(arg, {helpTitle = "Loon's own test suite."}))
