@@ -11,7 +11,11 @@
 - Snapshot testing facility
 
 There are of course several other Lua test libraries, I simply wanted one with this
-set of goals and trade-offs, and couldn't find exactly what I was looking for.
+set of goals and trade-offs, and couldn't find exactly what I was looking for. 
+
+Here's an example of the output you get when running `loon` tests from the terminal:
+
+<img width="486" alt="loon-output" src="https://github.com/user-attachments/assets/ebc9d2fe-e1c5-4687-8d5e-7c7a7d56a60a">
 
 Beware: this library is currently a work in progress. Please post any issues you discover.
 
