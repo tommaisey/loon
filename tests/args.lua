@@ -137,6 +137,15 @@ test.add('types and options', function()
     err("'%-%-=yo' is a malformed argument with '=' syntax", function()
         verify({'--=yo'}, spec)
     end)
+
+    -- Fuzzy match suggestions
+    err("'--oned' is an unrecognized argument. Did you mean 'one'?", function()
+        verify({'--oned', '--three'}, spec)
+    end)
+
+    err("'--five' is an unrecognized argument.", function()
+        verify({'--five', '--three'}, spec)
+    end)
 end)
 
 test.suite.stop('verification')
