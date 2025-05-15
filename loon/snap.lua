@@ -175,7 +175,16 @@ local function runUpdate()
             return false
         end
 
-        local file = assert(io.open(path, 'w+'), 'could not open path for writing: ' .. path)
+        local handle = io.open(path, 'w+')
+
+        if handle == nil then
+            -- TODO: this only works on macOS/Linux. Implement for Windows.
+            if os.execute(fmt('mkdir -p "$(dirname %q)"', path)) then
+                handle = io.open(path, 'w+')
+            end
+        end
+
+        local file = assert(handle, 'could not open path for writing: ' .. path)
         assert(file:write(actual))
         file:close()
         writef('%s: %s', color.pass('accepted'), color.file(path))
