@@ -53,6 +53,53 @@ local function reverseKeyValue(tbl)
     return new
 end
 
+local function keysAsArray(tbl)
+    local options = {}
+
+    for k in pairs(tbl) do
+        table.insert(options, k)
+    end
+
+    return options
+end
+
+--------------------------------------------------------------------------------------
+-- Fuzzy matching unrecognized argument names.
+local function levenshtein(s, t)
+    local m, n = #s, #t
+    if m == 0 then return n end
+    if n == 0 then return m end
+
+    local d = {}
+    for i = 0, m do d[i] = {[0] = i} end
+    for j = 0, n do d[0][j] = j end
+
+    for i = 1, m do
+        for j = 1, n do
+            local cost = (s:sub(i,i) == t:sub(j,j)) and 0 or 1
+            d[i][j] = math.min(
+                d[i-1][j] + 1,     -- deletion
+                d[i][j-1] + 1,     -- insertion
+                d[i-1][j-1] + cost -- substitution
+            )
+        end
+    end
+    return d[m][n]
+end
+
+local function fuzzyMatch(input, candidates)
+    local bestScore, bestMatch = -1, nil
+    for _, candidate in ipairs(candidates) do
+        local distance = levenshtein(input, candidate)
+        local score = 1 - (distance / math.max(#input, #candidate))
+        if score > bestScore then
+            bestScore = score
+            bestMatch = candidate
+        end
+    end
+    return bestMatch, bestScore
+end
+
 --------------------------------------------------------------------------------------
 local booleanConversions = {
     ['true'] = true,
@@ -109,7 +156,13 @@ local function consumeArg(name, raw, specs, config, convertedConfig, idx, ignore
             if #name == 1 and raw:match('^%-%-') then
                 error(fmt("'%s' is an unrecognized argument. Did you mean -%s?", raw, name))
             else
-                error(fmt("'%s' is an unrecognized argument", raw))
+                local match, score = fuzzyMatch(name, keysAsArray(specs))
+
+                if score >= 0.5 then
+                    error(fmt("'%s' is an unrecognized argument. Did you mean '%s'?", raw, match))
+                else
+                    error(fmt("'%s' is an unrecognized argument.", raw))
+                end
             end
         end
     else
