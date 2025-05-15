@@ -272,7 +272,7 @@ end)
 
 test.add('my second snapshot test', function()
     -- compares the stored file contents to whatever your function writes to io.output()
-    snapshot.output(a name that describes the test', function()
+    snapshot.output('a name that describes the test', function()
         io.output():write('this will be in the snapshots')
         io:write('so will this: io.write("x") is equivalent to io.output():write("x")')
         print('so will this: print() also uses io.output()')
@@ -296,10 +296,10 @@ anything written with `print()` or explicitly with `io.output():write(x)` or
 
 Snapshots are saved using the format `[directory specified by --dir]/[name given to assertion].snap`.
 This means that the name given to `compare()` or `output()` must be unique for
-a given configuration. You can re-configure the the directory whenever you want,
-but usually you'll do it at the top of a file. This means that the names must
-only be unique within that file. You'll be warned if a duplicate directory/name
-combination is used twice.
+a given directory configuration. You can re-configure the the directory whenever
+you want, but usually you'll do it at the top of a file. Choosing a unique directory
+for each test file means that the names must only be unique within that test file.
+You'll be warned if a directory/name combination is used twice during a test run.
 
 ``` lua
 -- my-tests/file-one.lua
