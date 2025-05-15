@@ -370,20 +370,18 @@ custom error messages.
 ```lua
 local loon = require('loon')
 
-local function equalIgnoringCase(a, b)
-    if type(a) ~= type(b) or type(a) ~= 'string' then
-        return false
-    end
+local function isTwoStrings(a, b)
+    return type(a) == 'string' or type(b) == 'string'
+end
 
-    return a:lower() == b:lower()
+local function equalIgnoringCase(a, b)
+    return isTwoStrings(a, b) and a:lower() == b:lower()
 end
 
 local function ignoringCaseFailMsg(srcLocation, a, b)
-    if type(a) ~= type(b) or type(a) ~= 'string' then
-        return string.format('%s expected two strings, got: %q and %q', srcLocation, type(a), type(b))
-    end
-
-    return string.format('%s strings not equal (ignoring case): %q vs. %q', srcLocation, a, b)
+    return isTwoStrings(a, b)
+        and string.format('%s strings not equal (ignoring case): %q vs. %q', srcLocation, a, b)
+        or  string.format('%s expected two strings, got: %q and %q', srcLocation, type(a), type(b))
 end
 
 -- We'll return a module so this can be required from your test files.
@@ -483,7 +481,7 @@ function myModule.config(configOrArgs, configDefaults)
 
     -- It's important to reset any mutable state you might have last,
     -- in a summary function. This allows multiple test runs to happen
-    -- in a single
+    -- in a single pass, without causing confusing reports.
     loon.plugin.summary('my custom test reset', function()
         numFailuresInMyPlugin = 0
     end)
