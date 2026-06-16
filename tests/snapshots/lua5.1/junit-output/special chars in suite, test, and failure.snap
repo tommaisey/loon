@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites tests="2" failures="2" errors="1" assertions="1" skipped="0">
+  <testsuite name="a &amp; b &lt;suite&gt;">
+    <properties><property name="Lua Version" value="Lua 5.1" /></properties>
+    <testcase name="quoted &quot;name&quot; with &apos;apostrophe&apos;" classname="a &amp; b &lt;suite&gt;" assertions="1">
+      <failure message="msg with &quot;quotes&quot; &amp; &lt;tags&gt;&#10;tests/junit-output.lua:[--]: expected: &quot;a &gt; b&quot;, got: &quot;a &lt; b&quot;"></failure>
+    </testcase>
+    <testcase name="errors with markup" classname="a &amp; b &lt;suite&gt;" assertions="0">
+      <error message="tests/junit-output.lua:[--]: boom: &lt;fatal&gt; &amp; &quot;stuck&quot;">
+        <![CDATA[
+stack traceback:
+	tests/junit-output.lua:[--]: in function <tests/junit-output.lua:[--]>
+	[C]: in function 'pcall'
+	loon/snap.lua:[--]: in function 'yourAssert'
+	loon/loon.lua:[--]: in function 'output'
+	tests/junit-output.lua:[--]: in function <tests/junit-output.lua:[--]>
+	[C]: in function 'xpcall'
+	loon/loon.lua:[--]: in function <loon/loon.lua:[--]>
+	(tail call): ?
+	loon/loon.lua:[--]: in function 'run'
+	tests/[[path normalized for test]]
+	[C]: ?]]>
+      </error>
+    </testcase>
+  </testsuite>
+</testsuites>

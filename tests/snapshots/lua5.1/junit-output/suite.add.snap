@@ -12,8 +12,8 @@
       <failure message="tests/junit-output.lua:[--]: expected: 5, got: 3"></failure>
     </testcase>
   </testsuite>
-  <testsuite name="suite 2 > suite 3">
+  <testsuite name="suite 2 &gt; suite 3">
     <properties><property name="Lua Version" value="Lua 5.1" /></properties>
-    <testcase name="mimsy" classname="suite 2 > suite 3" assertions="1" />
+    <testcase name="mimsy" classname="suite 2 &gt; suite 3" assertions="1" />
   </testsuite>
 </testsuites>
