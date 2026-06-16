@@ -163,7 +163,7 @@ local function consumeArg(name, raw, specs, config, convertedConfig, idx, ignore
     else
         local nextItem = config[idx + 1]
 
-        if nextItem ~= nil and not nextItem:find('^%-') then
+        if nextItem ~= nil and not nextItem:find('^%-%D') then
             value = nextItem
             idx = idx + 2
         else
