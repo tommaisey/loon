@@ -205,45 +205,67 @@ local function stringContains(got, expected)
         return false
     end
 
-    return got:find(expected)
+    return got:find(expected, 1, true)
 end
 
-local function stringContainsFailMsg(srcLocation, got, expected, text)
-    local typeExp, typeGot = type(expected), type(got)
-    local preamble, body
-
-    if typeExp ~= typeGot or typeGot ~= 'string' then
-        local gotS = stringify(got, typeGot == 'string' and color.pass or color.fail)
-        local expectedS = stringify(expected, typeExp == 'string' and color.pass or color.fail)
-        preamble = preambleMsg(text or 'string.contains: type error')
-        body = fmt('expected two strings, got: %s and: %s', gotS, expectedS)
-    else
-        local expectedS = stringify(expected, color.value)
-        local gotS = stringify(got, color.fail)
-        local newline1 = (#expected > 80 or expected:find('\n')) and '\n' or ''
-        local newline2 = (#got > 80 or got:find('\n')) and '\n' or ', '
-        preamble = preambleMsg(text or 'string.contains: no match')
-        body = fmt('%smatching: %s%sagainst: %s', newline1, expectedS, newline2, gotS)
-    end
-
-    return preamble .. srcLocation .. body
-end
-
-local function errorContains(errorMessage, errorFunction)
-    -- Don't allow matches against an empty expected string (which always succeeds).
-    if errorMessage == '' then
+local function stringMatches(got, expected)
+    if type(expected) ~= type(got) or type(got) ~= 'string' then
         return false
     end
 
-    local success, message = pcall(errorFunction)
-    return not success and type(message) == 'string' and message:find(errorMessage)
+    return got:find(expected)
 end
 
-local function errorFailMsg(srcLocation, expectedError, errorFunction)
-    local _, message = pcall(errorFunction)
+local function makeStringFailMsg(defaultMsg)
+    return function(srcLocation, got, expected, text)
+        local typeExp, typeGot = type(expected), type(got)
+        local preamble, body
 
-    return stringContainsFailMsg(srcLocation, message, expectedError, 'error.contains: no match')
+        if typeExp ~= typeGot or typeGot ~= 'string' then
+            local gotS = stringify(got, typeGot == 'string' and color.pass or color.fail)
+            local expectedS = stringify(expected, typeExp == 'string' and color.pass or color.fail)
+            preamble = preambleMsg(text or (defaultMsg .. ': type error'))
+            body = fmt('expected two strings, got: %s and: %s', gotS, expectedS)
+        else
+            local expectedS = stringify(expected, color.value)
+            local gotS = stringify(got, color.fail)
+            local newline1 = (#expected > 80 or expected:find('\n')) and '\n' or ''
+            local newline2 = (#got > 80 or got:find('\n')) and '\n' or ', '
+            preamble = preambleMsg(text or (defaultMsg .. ': no match'))
+            body = fmt('%smatching: %s%sagainst: %s', newline1, expectedS, newline2, gotS)
+        end
+
+        return preamble .. srcLocation .. body
+    end
 end
+
+local stringContainsFailMsg = makeStringFailMsg('string.contains')
+local stringMatchesFailMsg = makeStringFailMsg('string.matches')
+
+local function makeErrorAssert(matchFn)
+    return function(errorMessage, errorFunction)
+        -- Don't allow matches against an empty expected string (which always succeeds).
+        if errorMessage == '' then
+            return false
+        end
+
+        local success, message = pcall(errorFunction)
+        return not success and type(message) == 'string' and matchFn(message, errorMessage)
+    end
+end
+
+local errorContains = makeErrorAssert(stringContains)
+local errorMatches = makeErrorAssert(stringMatches)
+
+local function makeErrorFailMsg(stringFailMsg, defaultMsg)
+    return function(srcLocation, expectedError, errorFunction)
+        local _, message = pcall(errorFunction)
+        return stringFailMsg(srcLocation, message, expectedError, defaultMsg)
+    end
+end
+
+local errorContainsFailMsg = makeErrorFailMsg(stringContainsFailMsg, 'error.contains: no match')
+local errorMatchesFailMsg = makeErrorFailMsg(stringMatchesFailMsg, 'error.matches: no match')
 
 local function makeTruthTest(expectedStr)
     return function (srcLocation, got, text)
@@ -779,14 +801,21 @@ export.assert.is_nil = export.assert.isNil
 export.assert.near = export.assert.create(nearlyEquals, nearlyEqualsFailMsg)
 export.assert.nearly = export.assert.near
 
--- Checks that the received string contains the other.
--- The 'stringItMustContain' may be a pattern.
+-- Checks that the received string contains the other as a literal substring.
 -- Takes (got, stringItMustContain).
 export.assert.string.contains = export.assert.create(stringContains, stringContainsFailMsg)
 
--- Checks that an error is thrown, and its message contains a certain string.
+-- Checks that the received string matches a Lua pattern.
+-- Takes (got, luaPattern). See https://www.lua.org/manual/5.4/manual.html#6.4.1
+export.assert.string.matches = export.assert.create(stringMatches, stringMatchesFailMsg)
+
+-- Checks that an error is thrown, and its message contains a certain literal substring.
 -- Takes (expectedMessage, functionToThrowError).
-export.assert.error.contains = export.assert.create(errorContains, errorFailMsg)
+export.assert.error.contains = export.assert.create(errorContains, errorContainsFailMsg)
+
+-- Checks that an error is thrown, and its message matches a Lua pattern.
+-- Takes (luaPattern, functionToThrowError).
+export.assert.error.matches = export.assert.create(errorMatches, errorMatchesFailMsg)
 
 --------------------------------------------------------------------------------------
 -- Runners
