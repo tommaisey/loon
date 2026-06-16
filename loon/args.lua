@@ -190,7 +190,7 @@ local function consumeArg(name, raw, specs, config, convertedConfig, idx, ignore
         end
     else
         if value then
-            value = value:match('["\']?([^"\']+)')
+            value = value:match('^"(.*)"$') or value:match("^'(.*)'$") or value
         end
 
         local options = assert(spec.options, 'spec item lacks options array or type string')
