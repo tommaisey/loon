@@ -7,4 +7,7 @@
 --   function 'loon.loon.run'
 -- instead of:
 --   function 'loon.run'
-return assert(loadfile('loon/loon.lua'))()
+local source = debug.getinfo(1, 'S').source
+local dir = assert(source:sub(2):match('^(.*[/\\])'),
+    "loon/init.lua: couldn't determine own directory from " .. source)
+return assert(loadfile(dir .. 'loon.lua'))()
