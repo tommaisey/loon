@@ -64,6 +64,24 @@ test.add('values supplied with = syntax', function()
     eq(verify({'--one', '--three=\'b\'', '--two'}, spec), exB)
 end)
 
+test.add('value containing = is preserved', function()
+    local spec = {
+        flag = {options = {true, false}},
+        other = {options = {true, false}},
+        expr = {options = 'string'},
+        tail = {options = 'string'},
+    }
+    eq(verify({'--flag', '--expr=a=b'}, spec), {flag = true, expr = 'a=b'})
+    eq(verify({'--expr=x=y=z'}, spec), {expr = 'x=y=z'})
+
+    -- A =-value arg must not consume the following arg.
+    eq(verify({'--expr=a=b', '--flag'}, spec), {flag = true, expr = 'a=b'})
+    eq(verify({'--expr=a=b', '--tail', 'after'}, spec),
+        {expr = 'a=b', tail = 'after'})
+    eq(verify({'--expr=a=b', '--flag', '--other'}, spec),
+        {flag = true, other = true, expr = 'a=b'})
+end)
+
 test.add('booleans supplied with = syntax', function()
     local spec = {
         one = {options = {true, false}},

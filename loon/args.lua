@@ -153,7 +153,7 @@ local function consumeArg(name, raw, specs, config, convertedConfig, idx, ignore
     local value, isBooleanSwitch
 
     if name:find('=') then
-        name, value = name:match('([^=]+)=([^=]+)')
+        name, value = name:match('([^=]+)=(.+)')
 
         if not name or not value or #name == 0 or #value == 0 then
             error(fmt("'%s' is a malformed argument with '=' syntax: no value", raw))
