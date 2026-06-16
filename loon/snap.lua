@@ -115,7 +115,7 @@ local function compareVsOutput(name, testFn, transformer)
         error(msg)
     end
 
-    output = io.open(path, 'r')
+    output = assert(io.open(path, 'r'), "test runner couldn't reopen temporary file")
     local actual = output:read(readAllFlag)
     output:close()
     os.remove(path)
