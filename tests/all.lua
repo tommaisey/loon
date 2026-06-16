@@ -5,6 +5,7 @@ test.grouped(
     'tests.color',
     'tests.util',
     'tests.runner',
+    'tests.snap',
     'tests.terminal-output',
     'tests.junit-output'
 )

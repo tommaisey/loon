@@ -1,0 +1,4 @@
+# Keep all text files LF in the working tree across platforms.
+* text=auto eol=lf
+*.snap text eol=lf
+*.lua text eol=lf

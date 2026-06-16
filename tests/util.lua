@@ -12,35 +12,54 @@ test.add('dirname', function()
     eq(util.dirname(''), '.')
     eq(util.dirname('/etc/passwd'), '/etc')
     eq(util.dirname('weird name/file.snap'), 'weird name')
+    -- Windows-style separators are accepted too.
+    eq(util.dirname('a\\b\\c'), 'a\\b')
+    eq(util.dirname('C:\\foo\\bar.snap'), 'C:\\foo')
 end)
 
-test.add('shellQuote', function()
-    eq(util.shellQuote('simple'), "'simple'")
-    eq(util.shellQuote('has spaces'), "'has spaces'")
-    eq(util.shellQuote("it's"), [['it'\''s']])
-    eq(util.shellQuote('a"b'), [['a"b']])
-    eq(util.shellQuote('$HOME `whoami`'), [['$HOME `whoami`']])
-end)
+if util.isWindows then
+    test.add('shellQuote (windows)', function()
+        eq(util.shellQuote('simple'), '"simple"')
+        eq(util.shellQuote('has spaces'), '"has spaces"')
+        eq(util.shellQuote('a"b'), '"a""b"')
+    end)
+else
+    test.add('shellQuote (posix)', function()
+        eq(util.shellQuote('simple'), "'simple'")
+        eq(util.shellQuote('has spaces'), "'has spaces'")
+        eq(util.shellQuote("it's"), [['it'\''s']])
+        eq(util.shellQuote('a"b'), [['a"b']])
+        eq(util.shellQuote('$HOME `whoami`'), [['$HOME `whoami`']])
+    end)
+end
 
-test.add('mkdir -p round-trip through shellQuote handles awkward paths', function()
-    -- Create a parent dir with a name containing characters that break the
-    -- old Lua-%q quoting: spaces, single quotes, dollar signs, backticks.
-    local base = os.getenv('TMPDIR') or '/tmp'
-    base = base:gsub('/$', '')
-    local awkward = base .. "/loon test '$dir`"
-    local nested = awkward .. '/sub/leaf.snap'
+test.add('mkdirp creates nested directories', function()
+    local sep = util.isWindows and '\\' or '/'
+    -- On POSIX use awkward chars to prove our quoting handles them.
+    -- On Windows cmd.exe forbids most of these in paths, so use a plain name.
+    local leaf = util.isWindows and 'loon_test_dir' or "loon test '$dir`"
+    local root = util.tmpdir() .. sep .. leaf
+    local nested = root .. sep .. 'sub' .. sep .. 'leaf.snap'
 
     -- Pre-clean in case of stale state from a prior run.
-    os.execute('rm -rf ' .. util.shellQuote(awkward))
+    if util.isWindows then
+        os.execute('rmdir /s /q ' .. util.shellQuote(root) .. ' 2>nul')
+    else
+        os.execute('rm -rf ' .. util.shellQuote(root))
+    end
 
-    local rc = os.execute('mkdir -p ' .. util.shellQuote(util.dirname(nested)))
-    test.assert.truthy(rc, 'mkdir -p succeeded')
+    local ok = util.mkdirp(util.dirname(nested))
+    test.assert.truthy(ok, 'mkdirp succeeded')
 
     local probe = io.open(nested, 'w')
     test.assert.truthy(probe, 'parent directory exists and a file can be created in it')
     if probe then probe:close() end
 
-    os.execute('rm -rf ' .. util.shellQuote(awkward))
+    if util.isWindows then
+        os.execute('rmdir /s /q ' .. util.shellQuote(root) .. ' 2>nul')
+    else
+        os.execute('rm -rf ' .. util.shellQuote(root))
+    end
 end)
 
 test.run(arg)
