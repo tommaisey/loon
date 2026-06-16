@@ -100,6 +100,38 @@ test.add('values supplied as number', function()
     eq(verify({'--one', '--three=\'5\'', '--two'}, spec), ex5)
 end)
 
+test.add('detects arg table by interpreter at any negative index', function()
+    local spec = {one = {options = {true, false}}}
+    local ex = {one = true}
+
+    -- arg[-1] commonly holds the interpreter as a full path on POSIX/Windows.
+    local fullPath = {'--one'}
+    fullPath[-1] = '/usr/bin/lua5.4'
+    fullPath[0] = 'my-script-name.lua'
+    eq(args.verify({config = fullPath, spec = spec}), ex)
+
+    local winPath = {'--one'}
+    winPath[-1] = 'C:\\Program Files\\Lua\\lua.exe'
+    winPath[0] = 'my-script-name.lua'
+    eq(args.verify({config = winPath, spec = spec}), ex)
+
+    local luajit = {'--one'}
+    luajit[-1] = 'luajit'
+    luajit[0] = 'my-script-name.lua'
+    eq(args.verify({config = luajit, spec = spec}), ex)
+
+    -- Interpreter flags can occupy -1; the real interpreter sits further back.
+    local withFlags = {'--one'}
+    withFlags[-3] = '/usr/bin/lua'
+    withFlags[-2] = '-e'
+    withFlags[-1] = 'some code'
+    withFlags[0] = 'my-script-name.lua'
+    eq(args.verify({config = withFlags, spec = spec}), ex)
+
+    -- A plain config table (no negative indices) must NOT be treated as args.
+    eq(args.verify({config = {one = true}, spec = spec}), ex)
+end)
+
 test.suite.stop('parsing')
 test.suite.start('verification')
 
