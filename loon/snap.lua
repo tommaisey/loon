@@ -3,8 +3,9 @@ local export = {}
 
 local args = require('loon.args')
 local util = require('loon.util')
-local colored = require('loon.color')
-local color = colored.yes
+-- Shared palette mutated by colored.setMode; do not capture individual
+-- entries into locals or they will drift when the mode changes.
+local color = require('loon.color').palette
 -----------------------------------------------------------------------------
 local argsBase = {
     dir = {options = 'string', desc = "snapshot storage directory", required = true},

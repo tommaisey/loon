@@ -55,10 +55,9 @@ local remove = table.remove
 local iowrite = io.write
 
 -----------------------------------------------------------------------------
--- This table of functions is used to colorize text.
--- If it's reassigned to 'uncolored', output will be uncolored.
--- This is done by individual 'run' functions as needed below.
-local color = colored.yes
+-- Shared palette (mutated in place by colored.setMode). Both this module
+-- and loon.snap bind to it, so a mode switch made here is visible there.
+local color = colored.palette
 
 -----------------------------------------------------------------------------
 -- Internal helper functions.
@@ -376,7 +375,7 @@ end
 
 -- Runs the tests, outputting the results in a friendly terminal format.
 local function runTerminal(config)
-    color = config.uncolored and colored.no or colored.yes
+    colored.setMode(not config.uncolored)
     local terse, terseSuite, terseSuiteWritten, terseAnyWritten = config.terse
 
     -- Print newlines after test failure, but not after the last test.
@@ -481,7 +480,7 @@ end
 
 -- Runs the tests, outputting the results in JUNIT's standard XMl format.
 local function runJunit(config)
-    color = colored.no
+    colored.setMode(false)
     local times = config.times
     writef('<?xml version="1.0" encoding="UTF-8"?>\n')
 
@@ -816,7 +815,11 @@ function export.run(configOrArgs, configDefaults)
         junit = runJunit
     }
 
+    -- The chosen runner mutates the shared color palette via setMode;
+    -- save the prior mode so nested runs don't leak it to the caller.
+    local prevColorMode = colored.getMode()
     local result = outputs[config.output](config)
+    colored.setMode(prevColorMode)
     reset()
     return result
 end

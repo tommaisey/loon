@@ -40,6 +40,34 @@ test.add('ansi color', function()
     assert.truthy(n >= 8, 'has some colors')
 end)
 
+test.add('shared palette tracks setMode', function()
+    -- Save & restore the global mode so this test doesn't leak.
+    local original = color.getMode()
+
+    color.setMode(true)
+    assert.eq(color.getMode(), true, 'getMode reports colored')
+    for name in pairs(color.yes) do
+        assert.eq(color.palette[name], color.yes[name],
+            fmt('palette.%s mirrors colored after setMode(true)', name))
+    end
+
+    color.setMode(false)
+    assert.eq(color.getMode(), false, 'getMode reports uncolored')
+    for name in pairs(color.yes) do
+        assert.eq(color.palette[name], color.no[name],
+            fmt('palette.%s mirrors uncolored after setMode(false)', name))
+    end
+
+    -- setMode returns a restore closure that reverts the prior mode.
+    color.setMode(true)
+    local restore = color.setMode(false)
+    assert.eq(color.getMode(), false, 'setMode switches mode')
+    restore()
+    assert.eq(color.getMode(), true, 'restore closure reverts mode')
+
+    color.setMode(original)
+end)
+
 test.add('without color', function()
     for name in pairs(color.yes) do
         local c = color.no[name]
