@@ -3,6 +3,7 @@ local test = require('loon')
 test.grouped(
     'tests.args',
     'tests.color',
+    'tests.util',
     'tests.terminal-output',
     'tests.junit-output'
 )

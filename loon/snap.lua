@@ -180,7 +180,7 @@ local function runUpdate()
 
         if handle == nil then
             -- TODO: this only works on macOS/Linux. Implement for Windows.
-            if os.execute(fmt('mkdir -p "$(dirname %q)"', path)) then
+            if os.execute('mkdir -p ' .. util.shellQuote(util.dirname(path))) then
                 handle = io.open(path, 'w+')
             end
         end
