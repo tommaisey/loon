@@ -630,16 +630,20 @@ function export.grouped(...)
     local run = export.run
     export.run = resetSuite
 
-    for _, requireStyleString in ipairs({...}) do
-        if package.searchpath then -- Lua 5.4
-            local file = package.searchpath(requireStyleString, package.path)
-            assert(loadfile(file))()
-        else -- Lua 5.1
-            require(requireStyleString)
+    local ok, err = pcall(function(...)
+        for _, requireStyleString in ipairs({...}) do
+            if package.searchpath then -- Lua 5.4
+                local file = package.searchpath(requireStyleString, package.path)
+                assert(loadfile(file))()
+            else -- Lua 5.1
+                require(requireStyleString)
+            end
         end
-    end
+    end, ...)
 
     export.run = run
+
+    if not ok then error(err, 0) end
 end
 
 --------------------------------------------------------------------------------------
