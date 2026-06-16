@@ -150,6 +150,21 @@ test.add('detects arg table by interpreter at any negative index', function()
     eq(args.verify({config = {one = true}, spec = spec}), ex)
 end)
 
+test.add('quotes inside a value are preserved', function()
+    local spec = {expr = {options = 'string'}}
+
+    -- Apostrophe in the middle of an unquoted value.
+    eq(verify({'--expr=it\'s'}, spec), {expr = "it's"})
+    eq(verify({'--expr', 'it\'s'}, spec), {expr = "it's"})
+
+    -- Embedded double-quote in an unquoted value.
+    eq(verify({'--expr=a"b'}, spec), {expr = 'a"b'})
+
+    -- A matched outer pair is still stripped, but only the outer pair.
+    eq(verify({'--expr="a\'b"'}, spec), {expr = "a'b"})
+    eq(verify({'--expr=\'a"b\''}, spec), {expr = 'a"b'})
+end)
+
 test.add('negative number value is not mistaken for a flag', function()
     local spec = {
         flag = {options = {true, false}},
