@@ -111,14 +111,22 @@ test.add('assertion types', function()
     test.assert.near(5.1, 5, 0.2, 'optional message')
     test.assert.nearly(5.1, 5, 0.2, 'alias for near')
 
-    -- checks that a string contains another string.
-    -- the test string may be a Lua pattern if you need more flexibility.
+    -- checks that a string contains another (literal substring match).
     test.assert.string.contains('hello world', 'world')
-    test.assert.string.contains('hello world', '[Ww]orld')
 
-    -- checks that an error is thrown, and it contains the expected string.
-    -- the string may be a Lua pattern if you need more flexibility.
-    test.assert.error.contains('[Ee]xpected [Ss]tring', function()
+    -- like .contains, but treats the second arg as a Lua pattern.
+    -- see https://www.lua.org/manual/5.4/manual.html#6.4.1
+    test.assert.string.matches('hello world', '[Ww]orld')
+    test.assert.string.matches('version 1.2.3', '%d+%.%d+%.%d+')
+
+    -- checks that an error is thrown, and its message contains the
+    -- expected literal substring.
+    test.assert.error.contains('expected string', function()
+        somethingThatShouldThrowAnError()
+    end)
+
+    -- like .error.contains, but treats the first arg as a Lua pattern.
+    test.assert.error.matches('[Ee]xpected [Ss]tring', function()
         somethingThatShouldThrowAnError()
     end)
 end)

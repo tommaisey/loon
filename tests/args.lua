@@ -2,7 +2,7 @@ local args = require('loon.args')
 local test = require('loon')
 local snap = require('loon.snap')
 local eq = test.assert.equals
-local err = test.assert.error.contains
+local err = test.assert.error.matches
 
 local function verify(array, spec, defaults, userDefaults, abbreviations)
     array[-1] = 'lua'
