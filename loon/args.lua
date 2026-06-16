@@ -5,7 +5,30 @@
 -- convert from argument lists to a config table, then
 -- verify the table against a spec.
 --
--- The spec is a table of keys to arrays of 'allowed' values.
+-- The input is 'config', the constraints are described by 'spec'.
+-- You can also specify defaults from the program and a second set
+-- of overridden defaults from user code. Finally a table of abbreviations
+-- maps single-letter argument names to full-length ones.
+--
+-- @usage
+-- -- Verifies the 'config' table and extracts the values out of it.
+-- -- The result will be: {flag = true, setting = 'x'}.
+-- local result = args.verify({
+--     config = {'lua', 'dir1/dir2/my-script.lua', '--flag', '--setting=x'},
+--     spec = {flag = {options = {true, false}}, setting = {options = {'x', 'y'}})},
+--     defaults = {flag = true},
+--     userDefaults = {setting = 'y'},
+--     abbreviations = {s = 'settings'}
+-- })
+--
+-- -- Prints the 'help' text
+-- args.describe({
+--     config = {'lua', 'dir1/dir2/my-script.lua', '--flag', '--setting=x'},
+--     spec = {flag = {options = {true, false}}, setting = {options = {'x', 'y'}})},
+--     defaults = {flag = true},
+--     userDefaults = {setting = 'y'},
+--     abbreviations = {s = 'settings'}
+-- })
 --------------------------------------------------------------------------------------
 local export = {}
 local fmt = string.format
@@ -67,8 +90,8 @@ end
 -- Fuzzy matching unrecognized argument names.
 local function levenshtein(s, t)
     local m, n = #s, #t
-    if m == 0 then return n end
-    if n == 0 then return m end
+    if m == 0 then return nil end
+    if n == 0 then return nil end
 
     local d = {}
     for i = 0, m do d[i] = {[0] = i} end
