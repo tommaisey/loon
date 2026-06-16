@@ -12,15 +12,16 @@ test.add('grouped restores export.run when a loaded file errors', function()
 
     -- Drop a Lua file in TMPDIR that errors on load. Put its directory
     -- onto package.path so `require`/`searchpath` can find it.
-    local tmpdir = (os.getenv('TMPDIR') or '/tmp'):gsub('/$', '')
+    local tmpdir = util.tmpdir()
+    local sep = util.isWindows and '\\' or '/'
     local modname = 'loon_grouped_error_probe'
-    local path = tmpdir .. '/' .. modname .. '.lua'
+    local path = tmpdir .. sep .. modname .. '.lua'
     local f = assert(io.open(path, 'w'))
     f:write('error("intentional load failure")')
     f:close()
 
     local oldPath = package.path
-    package.path = tmpdir .. '/?.lua;' .. package.path
+    package.path = tmpdir .. sep .. '?.lua;' .. package.path
     -- Lua 5.1 caches require() results, including failures; clear it.
     if package.loaded then package.loaded[modname] = nil end
 

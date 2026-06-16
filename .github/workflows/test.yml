@@ -3,12 +3,33 @@ name: Loon tests
 on: [push]
 
 jobs:
-  test-all:
-    runs-on: ubuntu-latest
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
+    - name: Set up MSVC (Windows only)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
     - uses: jkl1337/gh-actions-lua@v11
       with:
         luaVersion: "5.4.4"
     - name: Run tests
       run: lua tests/all.lua -o terminal
+
+  # Aggregator check kept on its own so branch protection can require a
+  # single status name regardless of how many platforms the matrix covers.
+  test-all:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Verify all matrix jobs succeeded
+      run: |
+        if [ "${{ needs.test.result }}" != "success" ]; then
+          echo "matrix jobs did not all succeed: ${{ needs.test.result }}"
+          exit 1
+        fi

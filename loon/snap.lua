@@ -36,16 +36,46 @@ local function writefNoNewline(fstring, ...)
     iowrite(fmt(fstring, ...))
 end
 
-local function diff(actual, expectedPath)
-    local tmpPath = os.tmpname()
-    local file = assert(io.open(tmpPath, 'w+'), "test runner couldn't open temporary file")
-    assert(file:write(actual))
-    file:close()
+-- Snapshots are compared as text, not bytes. We strip CRs from any CRLFs
+-- before comparing so a snapshot committed with LF still matches when
+-- materialized with CRLF (e.g. on a Windows checkout with autocrlf=true).
+local function normalizeEol(s)
+    return (s:gsub('\r\n', '\n'))
+end
 
-    local diffHandle = io.popen(fmt('git diff "%s" "%s"', expectedPath, tmpPath))
+-- Writes `content` (LF-normalized) to a fresh temp file and returns its path.
+local function writeNormalizedTmp(content)
+    local path = os.tmpname()
+    local file = assert(io.open(path, 'w+b'), "test runner couldn't open temporary file")
+    assert(file:write(normalizeEol(content)))
+    file:close()
+    return path
+end
+
+local function diff(actual, expectedPath)
+    -- Round both sides through normalized temp files so the rendered diff
+    -- reflects semantic differences, not stray CRs from a CRLF checkout.
+    local actualTmp = writeNormalizedTmp(actual)
+    local expectedFile = io.open(expectedPath, 'rb')
+    local expectedTmp
+    if expectedFile then
+        local expected = expectedFile:read(readAllFlag)
+        expectedFile:close()
+        expectedTmp = writeNormalizedTmp(expected)
+    else
+        expectedTmp = expectedPath -- no snapshot file yet; let git report it
+    end
+
+    -- Disable autocrlf so git compares the bytes we wrote, and silence
+    -- the "LF will be replaced by CRLF" noise on Windows.
+    local diffHandle = io.popen(fmt(
+        'git -c core.autocrlf=false -c core.safecrlf=false diff "%s" "%s"',
+        expectedTmp, actualTmp
+    ))
     local text = assert(diffHandle, 'Could not run diff program'):read(readAllFlag)
     diffHandle:close()
-    os.remove(tmpPath)
+    os.remove(actualTmp)
+    if expectedTmp ~= expectedPath then os.remove(expectedTmp) end
     return text
 end
 
@@ -70,7 +100,9 @@ local function compareVsFile(name, actual, transformer)
 
     testNames[qualifiedName] = true
     local path = dir .. name .. '.snap'
-    local file = io.open(path, 'r')
+    -- Binary mode: snapshot bytes (including line endings) must compare
+    -- identically across macOS/Linux/Windows.
+    local file = io.open(path, 'rb')
 
     if transformer then
         actual = transformer(actual)
@@ -83,8 +115,9 @@ local function compareVsFile(name, actual, transformer)
         return false
     end
 
-    local saved = file:read(readAllFlag)
+    local saved = normalizeEol(file:read(readAllFlag))
     file:close()
+    actual = normalizeEol(actual)
 
     if saved == actual then
         kind[name] = 'pass'
@@ -102,7 +135,8 @@ end
 local function compareVsOutput(name, testFn, transformer)
     local path = os.tmpname()
     local outputPrev = io.output()
-    local output = assert(io.open(path, 'w+'), "test runner couldn't open temporary file")
+    -- Binary mode: capture bytes verbatim, no CRLF rewrite on Windows.
+    local output = assert(io.open(path, 'w+b'), "test runner couldn't open temporary file")
     io.output(output)
 
     local success, msg = pcall(testFn)
@@ -115,7 +149,7 @@ local function compareVsOutput(name, testFn, transformer)
         error(msg)
     end
 
-    output = assert(io.open(path, 'r'), "test runner couldn't reopen temporary file")
+    output = assert(io.open(path, 'rb'), "test runner couldn't reopen temporary file")
     local actual = output:read(readAllFlag)
     output:close()
     os.remove(path)
@@ -176,12 +210,11 @@ local function runUpdate()
             return false
         end
 
-        local handle = io.open(path, 'w+')
+        local handle = io.open(path, 'w+b')
 
         if handle == nil then
-            -- TODO: this only works on macOS/Linux. Implement for Windows.
-            if os.execute('mkdir -p ' .. util.shellQuote(util.dirname(path))) then
-                handle = io.open(path, 'w+')
+            if util.mkdirp(util.dirname(path)) then
+                handle = io.open(path, 'w+b')
             end
         end
 
@@ -314,8 +347,11 @@ function export.normalizeStack(...)
         return msg
             :gsub('(:)%d+([:>])', '%1[--]%2') -- uncolored line numbers
             :gsub('(:[^m]+m)%d+([^m]+m[:>])', '%1[--]%2') -- colored line numbers
+            :gsub('\\', '/') -- fold Windows path separators to '/'
             :gsub('%./', '') -- relative path normalize
-            :gsub('function: 0x%x+', 'function: [normalized for test]') -- function representation
+            -- Function representations: Linux/macOS print 'function: 0xDEADBEEF',
+            -- Windows prints 'function: 00007FF6DEADBEEF' (no '0x' prefix).
+            :gsub('function: 0?x?%x%x%x%x+', 'function: [normalized for test]')
     end
 end
 
