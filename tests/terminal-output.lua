@@ -279,6 +279,16 @@ test.add('assertions', function()
         loon.run()
     end, normalizeStack)
 
+    snap.output('assert.create default fail message', function()
+        loon.add('custom assertion default failMsg', function()
+            local alwaysFalse = loon.assert.create(function() return false end)
+            alwaysFalse()
+            alwaysFalse(1, 'two', true)
+        end)
+
+        loon.run()
+    end, normalizeStack)
+
     snap.output('assert.error.contains', function()
         loon.add('error.contains', function()
             loon.assert.error.contains('blammo', function()

@@ -117,7 +117,7 @@ end
 -- Assertion inner functions.
 -- These are packaged into exported functions using `loon.assert.create()` further down.
 local function defaultFailMsg(srcLocation, ...)
-    if select(..., '#') == 0 then
+    if select('#', ...) == 0 then
         return fmt('%s: assertion failed (no arguments)', srcLocation)
     end
 
