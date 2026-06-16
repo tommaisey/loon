@@ -150,6 +150,22 @@ test.add('detects arg table by interpreter at any negative index', function()
     eq(args.verify({config = {one = true}, spec = spec}), ex)
 end)
 
+test.add('negative number value is not mistaken for a flag', function()
+    local spec = {
+        flag = {options = {true, false}},
+        count = {options = 'number'},
+        amount = {options = 'number'},
+    }
+
+    eq(verify({'--count', '-5'}, spec), {count = -5})
+    eq(verify({'--count', '-5', '--flag'}, spec), {count = -5, flag = true})
+    eq(verify({'--flag', '--count', '-5'}, spec), {count = -5, flag = true})
+    eq(verify({'--amount', '-3.14'}, spec), {amount = -3.14})
+
+    -- A real flag immediately after must still be treated as a flag.
+    eq(verify({'--flag', '--count', '7'}, spec), {flag = true, count = 7})
+end)
+
 test.suite.stop('parsing')
 test.suite.start('verification')
 
