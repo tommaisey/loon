@@ -93,6 +93,26 @@ local function indent(text)
     return text:gsub('\n', '\n  ')
 end
 
+local xmlAttrEntities = {
+    ['&']  = '&amp;',
+    ['<']  = '&lt;',
+    ['>']  = '&gt;',
+    ['"']  = '&quot;',
+    ["'"]  = '&apos;',
+    ['\n'] = '&#10;',
+    ['\r'] = '&#13;',
+    ['\t'] = '&#9;',
+}
+
+local function xmlAttr(s)
+    return (tostring(s):gsub('[&<>"\'\n\r\t]', xmlAttrEntities))
+end
+
+-- Splits any literal ']]>' across two CDATA sections so it can't terminate ours.
+local function xmlCdata(s)
+    return (tostring(s):gsub(']]>', ']]]]><![CDATA[>'))
+end
+
 local function clone(tbl)
     local cloned = {}
     for k, v in pairs(tbl) do
@@ -527,30 +547,31 @@ local function runJunit(config)
 
         for _, testSuite in ipairs(suiteOrder) do
             local suiteName = #testSuite == 0 and "default" or table.concat(testSuite, " > ")
+            local escapedSuiteName = xmlAttr(suiteName)
 
-            writef('  <testsuite name="%s">', suiteName)
-            writef('    <properties><property name="Lua Version" value="%s" /></properties>', _VERSION)
+            writef('  <testsuite name="%s">', escapedSuiteName)
+            writef('    <properties><property name="Lua Version" value="%s" /></properties>', xmlAttr(_VERSION))
 
             for _, result in ipairs(suites[testSuite]) do
-                local name, num = result.name, result.assertions
+                local name, num = xmlAttr(result.name), result.assertions
 
                 if result.errorObj then
                     local msg, trace = result.errorObj.msg, result.errorObj.trace
-                    writef('    <testcase name="%s" classname="%s" assertions="%d">', name, suiteName, num)
-                    writef('      <error message="%s">', msg)
-                    writef('        <![CDATA[%s]]>', trace)
+                    writef('    <testcase name="%s" classname="%s" assertions="%d">', name, escapedSuiteName, num)
+                    writef('      <error message="%s">', xmlAttr(msg))
+                    writef('        <![CDATA[%s]]>', xmlCdata(trace))
                     writef('      </error>')
                     writef('    </testcase>')
                 elseif result.failures then
-                    writef('    <testcase name="%s" classname="%s" assertions="%d">', name, suiteName, num)
+                    writef('    <testcase name="%s" classname="%s" assertions="%d">', name, escapedSuiteName, num)
 
                     for _, failure in ipairs(result.failures) do
-                        writef('      <failure message="%s"></failure>', failure:gsub('\n', '&#10;'))
+                        writef('      <failure message="%s"></failure>', xmlAttr(failure))
                     end
 
                     writef('    </testcase>')
                 else
-                    writef('    <testcase name="%s" classname="%s" assertions="%d" />', name, suiteName, num)
+                    writef('    <testcase name="%s" classname="%s" assertions="%d" />', name, escapedSuiteName, num)
                 end
             end
 
