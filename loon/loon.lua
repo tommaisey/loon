@@ -55,8 +55,11 @@ local remove = table.remove
 local iowrite = io.write
 
 -----------------------------------------------------------------------------
--- Shared palette (mutated in place by colored.setMode). Both this module
--- and loon.snap bind to it, so a mode switch made here is visible there.
+-- Shared palette (mutated in place by colored.setMode in `export.run`).
+-- Both this module and loon.snap bind to it, so a mode switch is visible
+-- in both. The assertion fail-msg helpers below capture it as an upvalue.
+-- Writer functions (`runTerminal`/`runJunit`) instead receive `color` as
+-- an explicit parameter — see `export.run` for where the choice is made.
 local color = colored.palette
 
 -----------------------------------------------------------------------------
@@ -396,8 +399,7 @@ local function runWith(writeSuiteBegin, writeTest, writeSuiteEnd, writeSummary)
 end
 
 -- Runs the tests, outputting the results in a friendly terminal format.
-local function runTerminal(config)
-    colored.setMode(not config.uncolored)
+local function runTerminal(config, color)
     local terse, terseSuite, terseSuiteWritten, terseAnyWritten = config.terse
 
     -- Print newlines after test failure, but not after the last test.
@@ -501,8 +503,8 @@ local function runTerminal(config)
 end
 
 -- Runs the tests, outputting the results in JUNIT's standard XMl format.
+-- JUnit output is plain XML, so no color palette is needed.
 local function runJunit(config)
-    colored.setMode(false)
     local times = config.times
     writef('<?xml version="1.0" encoding="UTF-8"?>\n')
 
@@ -843,16 +845,23 @@ function export.run(configOrArgs, configDefaults)
         os.exit(0)
     end
 
-    local outputs = {
-        terminal = runTerminal,
-        junit = runJunit
-    }
+    -- Choose the palette for this run and sync the shared palette so
+    -- loon.snap (which binds to it) and the assertion fail-msg helpers
+    -- see the same mode. JUnit output is always plain XML, so its mode
+    -- is forced uncolored regardless of `config.uncolored`. The chosen
+    -- palette is also passed explicitly to the terminal writer.
+    local useColor = config.output == 'terminal' and not config.uncolored
+    local color = useColor and colored.yes or colored.no
+    local restoreColorMode = colored.setMode(useColor)
 
-    -- The chosen runner mutates the shared color palette via setMode;
-    -- save the prior mode so nested runs don't leak it to the caller.
-    local prevColorMode = colored.getMode()
-    local result = outputs[config.output](config)
-    colored.setMode(prevColorMode)
+    local result
+    if config.output == 'terminal' then
+        result = runTerminal(config, color)
+    else
+        result = runJunit(config)
+    end
+
+    restoreColorMode()
     reset()
     return result
 end
