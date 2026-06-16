@@ -58,8 +58,8 @@ local function ofType(spec, typeString)
     return true
 end
 
-local function contains(array, value)
-    for _, val in pairs(array) do
+local function contains(tbl, value)
+    for _, val in pairs(tbl) do
         if val == value then
             return true
         end
