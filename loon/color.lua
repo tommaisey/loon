@@ -40,4 +40,33 @@ for key in pairs(ansi) do
     uncolored[key] = tostring
 end
 
-return {yes = colored, no = uncolored, ansi = ansi}
+-- Shared palette — both `loon` and `loon.snap` bind to this once.
+-- `setMode` mutates it in place so a mode switch in one module is
+-- visible to the other (callers must not capture individual entries).
+local palette = {}
+local currentlyColored
+
+-- Switches the shared palette to colored / uncolored output.
+-- Returns a closure that, when called, restores the previous mode —
+-- callers should invoke it on exit so nested runs don't leak their mode.
+local function setMode(useColor)
+    local previous = currentlyColored
+    if useColor ~= previous then
+        currentlyColored = useColor
+        local src = useColor and colored or uncolored
+        for k in pairs(palette) do palette[k] = nil end
+        for k, v in pairs(src) do palette[k] = v end
+    end
+    return function()
+        if previous ~= nil then setMode(previous) end
+    end
+end
+
+setMode(true)
+
+local function getMode() return currentlyColored end
+
+return {
+    yes = colored, no = uncolored, ansi = ansi,
+    palette = palette, setMode = setMode, getMode = getMode,
+}
