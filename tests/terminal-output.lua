@@ -5,10 +5,6 @@
 -- look at the snapshot files themselves, or even move the snapshot
 -- directory, re-run the tests interactively, and check that the results
 -- come out the same again.
---
--- NOTE! Unfortunately since the loon tests print line-numbers, if you
--- add a test anywhere except the top, you will have to re-approve tests
--- that contain line-numbers since they will have moved.
 local snap = require('loon.snap')
 local util = require('loon.util')
 
