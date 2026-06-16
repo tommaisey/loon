@@ -1,0 +1,7 @@
+[34mdefault suite[0m
+[31mnot ok[0m custom assertion default failMsg [[31m2[0m fail, [32m0[0m pass]
+  ([31m1[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: : assertion failed (no arguments)
+  ([31m2[0m) [36mtests/terminal-output.lua[0m:[36m[--][0m: : assertion failed with arguments: 1, "two", true
+--------------------------
+[32mpass[0m: [32m0[0m tests, [32m0[0m assertions
+[31mfail[0m: [31m1[0m tests, [31m2[0m assertions
